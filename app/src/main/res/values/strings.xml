@@ -1,4 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">Agnes AI Studio</string>
+    <string name="navigation_drawer_open">打开导航</string>
+    <string name="navigation_drawer_close">关闭导航</string>
 </resources>
