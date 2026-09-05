@@ -47,6 +47,8 @@ public class MainActivity extends AppCompatActivity {
     private Spinner spImageModel;
     private Spinner spVideoModel;
     private TextView tvOutput;
+    private TextView tvKeyStats;
+    private TextView tvKeyList;
     private ScrollView svOutput;
     private ImageView ivPreview;
     private Button btnGenerate;
@@ -82,9 +84,17 @@ public class MainActivity extends AppCompatActivity {
         spImageModel = findViewById(R.id.sp_image_model);
         spVideoModel = findViewById(R.id.sp_video_model);
         tvOutput = findViewById(R.id.tv_output);
+        tvKeyStats = findViewById(R.id.tv_key_stats);
+        tvKeyList = findViewById(R.id.tv_key_list);
         svOutput = findViewById(R.id.sv_output);
         ivPreview = findViewById(R.id.iv_preview);
         btnGenerate = findViewById(R.id.btn_generate);
+
+        // 添加 Key 按钮
+        findViewById(R.id.btn_add_key).setOnClickListener(v -> addApiKey());
+
+        // 删除 Key 按钮
+        findViewById(R.id.btn_remove_key).setOnClickListener(v -> removeApiKey());
 
         // 设置 API 地址下拉
         List<String> urlNames = new ArrayList<>();
@@ -176,6 +186,9 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onNothingSelected(android.widget.AdapterView<?> parent) {}
         });
+
+        // 加载多 Key 列表
+        updateKeyListDisplay();
     }
 
     private void saveConfig() {
@@ -197,6 +210,55 @@ public class MainActivity extends AppCompatActivity {
         }
 
         Toast.makeText(this, "配置已保存", Toast.LENGTH_SHORT).show();
+    }
+
+    // ==================== 多 Key 管理 ====================
+
+    private void addApiKey() {
+        String key = etApiKey.getText().toString().trim();
+        if (key.isEmpty()) {
+            Toast.makeText(this, "请输入 API Key", Toast.LENGTH_SHORT).show();
+            return;
+        }
+        api.addApiKey(key);
+        etApiKey.setText("");
+        updateKeyListDisplay();
+        Toast.makeText(this, "Key 已添加", Toast.LENGTH_SHORT).show();
+    }
+
+    private void removeApiKey() {
+        List<String> keys = api.getApiKeyList();
+        if (keys.isEmpty()) {
+            Toast.makeText(this, "暂无 Key 可删除", Toast.LENGTH_SHORT).show();
+            return;
+        }
+        String currentKey = api.getCurrentApiKey();
+        api.removeApiKey(currentKey);
+        updateKeyListDisplay();
+        Toast.makeText(this, "已删除: " + maskKey(currentKey), Toast.LENGTH_SHORT).show();
+    }
+
+    private void updateKeyListDisplay() {
+        List<String> keys = api.getApiKeyList();
+        tvKeyStats.setText(api.getKeyStats());
+
+        if (keys.isEmpty()) {
+            tvKeyList.setText("暂无 Key");
+            return;
+        }
+
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < keys.size(); i++) {
+            String masked = maskKey(keys.get(i));
+            if (i > 0) sb.append("\n");
+            sb.append((i + 1)).append(". ").append(masked);
+        }
+        tvKeyList.setText(sb.toString());
+    }
+
+    private String maskKey(String key) {
+        if (key == null || key.length() < 8) return key;
+        return key.substring(0, 4) + "****" + key.substring(key.length() - 4);
     }
 
     private void showPresetDialog() {

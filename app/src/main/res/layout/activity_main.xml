@@ -80,24 +80,83 @@
                     android:layout_marginBottom="8dp"
                     android:visibility="gone" />
 
-                <TextView
-                    android:layout_width="wrap_content"
+                <LinearLayout
+                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:text="API Key"
-                    android:textSize="13sp"
-                    android:textColor="#666666"
-                    android:layout_marginBottom="4dp" />
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:layout_marginBottom="4dp">
+
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="API Key (多 Key 轮询)"
+                        android:textSize="13sp"
+                        android:textColor="#666666" />
+
+                    <TextView
+                        android:id="@+id/tv_key_stats"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="0/0"
+                        android:textSize="12sp"
+                        android:textColor="#4CAF50"
+                        android:textStyle="bold" />
+                </LinearLayout>
 
                 <EditText
                     android:id="@+id/et_api_key"
                     android:layout_width="match_parent"
-                    android:layout_height="44dp"
-                    android:hint="输入你的 API Key"
-                    android:textSize="14sp"
+                    android:layout_height="40dp"
+                    android:hint="输入 API Key，点击添加"
+                    android:textSize="13sp"
                     android:padding="8dp"
                     android:background="@drawable/edit_bg"
                     android:inputType="textPassword"
-                    android:layout_marginBottom="8dp" />
+                    android:singleLine="true"
+                    android:layout_marginBottom="4dp" />
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:layout_marginBottom="4dp">
+
+                    <Button
+                        android:id="@+id/btn_add_key"
+                        android:layout_width="0dp"
+                        android:layout_height="36dp"
+                        android:layout_weight="1"
+                        android:text="+ 添加"
+                        android:textSize="12sp"
+                        android:backgroundTint="#2196F3"
+                        android:textColor="@android:color/white"
+                        android:layout_marginEnd="4dp" />
+
+                    <Button
+                        android:id="@+id/btn_remove_key"
+                        android:layout_width="0dp"
+                        android:layout_height="36dp"
+                        android:layout_weight="1"
+                        android:text="- 删除当前"
+                        android:textSize="12sp"
+                        android:backgroundTint="#F44336"
+                        android:textColor="@android:color/white"
+                        android:layout_marginStart="4dp" />
+                </LinearLayout>
+
+                <TextView
+                    android:id="@+id/tv_key_list"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="暂无 Key"
+                    android:textSize="11sp"
+                    android:textColor="#999999"
+                    android:lineSpacingExtra="2dp"
+                    android:layout_marginBottom="8dp"
+                    android:maxLines="5"
+                    android:ellipsize="end" />
 
                 <Button
                     android:id="@+id/btn_save_config"
