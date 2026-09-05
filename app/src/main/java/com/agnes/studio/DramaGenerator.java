@@ -59,7 +59,7 @@ public class DramaGenerator {
 
                 // 生成视频
                 String taskId = api.generateVideo(videoModel, description, imageUrl);
-                videoUrls[i] = waitForVideo(taskId, callback);
+                videoUrls[i] = waitForVideo(taskId, videoModel, callback);
             }
 
             return videoUrls;
@@ -70,10 +70,10 @@ public class DramaGenerator {
 
     // ==================== 等待视频生成 ====================
 
-    private String waitForVideo(String taskId, Callback callback) throws IOException {
+    private String waitForVideo(String taskId, String model, Callback callback) throws IOException {
         int maxAttempts = 120; // 最多等待10分钟
         for (int i = 0; i < maxAttempts; i++) {
-            JSONObject status = api.getVideoStatus(taskId);
+            JSONObject status = api.getVideoStatus(taskId, model);
             String state = status.optString("status", "");
 
             if ("completed".equals(state) || "success".equals(state)) {
