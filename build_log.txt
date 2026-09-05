@@ -1,0 +1,32 @@
+﻿
+> Configure project :
+Build was configured to prefer settings repositories over project repositories but repository 'Google' was added by build file 'build.gradle'
+Build was configured to prefer settings repositories over project repositories but repository 'MavenRepo' was added by build file 'build.gradle'
+Build was configured to prefer settings repositories over project repositories but repository 'Google' was added by build file 'build.gradle'
+Build was configured to prefer settings repositories over project repositories but repository 'MavenRepo' was added by build file 'build.gradle'
+.\gradlew.bat : 
+所在位置 行:1 字符: 1
++ .\gradlew.bat assembleDebug 2>&1 | Out-File -FilePath "D:\短剧制作工具\agne ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+FAILURE: Build failed with an exception.
+
+* Where:
+Build file 'D:\短剧制作工具\agnes-android\app\build.gradle' line: 2
+
+* What went wrong:
+An exception occurred applying plugin request [id: 'com.android.application']
+> Failed to apply plugin 'com.android.internal.application'.
+   > Your project path contains non-ASCII characters. This will most likely cause the build to fail on Windows. Please 
+move your project to a different directory. See http://b.android.com/95744 for details. This warning can be disabled by
+ adding the line 'android.overridePathCheck=true' to gradle.properties file in the project directory.
+
+* Try:
+> Run with --stacktrace option to get the stack trace.
+> Run with --info or --debug option to get more log output.
+> Run with --scan to get full insights.
+> Get more help at https://help.gradle.org.
+
+BUILD FAILED in 4s

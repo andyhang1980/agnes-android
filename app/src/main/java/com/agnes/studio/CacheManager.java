@@ -84,7 +84,13 @@ public class CacheManager {
             item.put("path", path);
             item.put("time", timestamp);
             arr.put(item);
-            if (arr.length() > 50) arr = arr.slice(arr.length() - 50, arr.length());
+            if (arr.length() > 50) {
+                JSONArray trimmed = new JSONArray();
+                for (int i = arr.length() - 50; i < arr.length(); i++) {
+                    trimmed.put(arr.getJSONObject(i));
+                }
+                arr = trimmed;
+            }
             prefs.edit().putString(key, arr.toString()).apply();
         } catch (JSONException e) {
             // ignore

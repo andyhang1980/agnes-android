@@ -627,46 +627,48 @@ public class MainActivity extends AppCompatActivity {
         workflowDialog.setProgress("🚀 一键生成短剧");
         workflowDialog.appendLog("主题: " + input);
 
-        String tm = getTextModel(), im = getImageModel(), vm = getVideoModel();
-        String sp = etScriptPrompt.getText().toString().trim(); if (sp.isEmpty()) sp = PromptTemplates.DEFAULT_SCRIPT_SYSTEM;
-        String shp = etShotsPrompt.getText().toString().trim(); if (shp.isEmpty()) shp = PromptTemplates.DEFAULT_SHOTS_SYSTEM;
+        final String textModel = getTextModel();
+        final String imageModel = getImageModel();
+        final String videoModel = getVideoModel();
+        final String scriptPrompt = etScriptPrompt.getText().toString().trim().isEmpty() ? PromptTemplates.DEFAULT_SCRIPT_SYSTEM : etScriptPrompt.getText().toString().trim();
+        final String shotsPrompt = etShotsPrompt.getText().toString().trim().isEmpty() ? PromptTemplates.DEFAULT_SHOTS_SYSTEM : etShotsPrompt.getText().toString().trim();
 
         new Thread(() -> {
             try {
                 workflowDialog.setStepActive(1);
-                workflowDialog.appendLog("① 生成剧本 [" + tm + "]");
-                String script = api.chatCompletion(getTextBaseUrl(), getTextKey(), tm, input, sp);
+                workflowDialog.appendLog("① 生成剧本 [" + textModel + "]");
+                String script = api.chatCompletion(getTextBaseUrl(), getTextKey(), textModel, input, scriptPrompt);
                 lastScript = script;
                 cache.saveLastScript(script);
                 workflowDialog.setStepDone(1);
                 workflowDialog.appendLog("剧本完成 (" + script.length() + " 字)");
 
                 workflowDialog.setStepActive(2);
-                workflowDialog.appendLog("② 生成分镜 [" + tm + "]");
-                String shots = api.chatCompletion(getTextBaseUrl(), getTextKey(), tm, script, shp);
+                workflowDialog.appendLog("② 生成分镜 [" + textModel + "]");
+                String shots = api.chatCompletion(getTextBaseUrl(), getTextKey(), textModel, script, shotsPrompt);
                 lastShots = shots;
                 cache.saveLastShots(shots);
                 workflowDialog.setStepDone(2);
                 workflowDialog.appendLog("分镜完成 (" + shots.length() + " 字)");
 
                 workflowDialog.setStepActive(3);
-                workflowDialog.appendLog("③ 文生图 [" + im + "]");
-                String img = api.generateImage(getImageBaseUrl(), getImageKey(), im, input);
+                workflowDialog.appendLog("③ 文生图 [" + imageModel + "]");
+                String img = api.generateImage(getImageBaseUrl(), getImageKey(), imageModel, input);
                 workflowDialog.appendLog("图片 URL 获取成功");
 
                 workflowDialog.setStepActive(4);
                 String ff = shouldUseFirstFrame() ? getFirstFrameUri() : null;
                 String lf = shouldUseLastFrame() ? getLastFrameUri() : null;
                 String neg = getNegativePrompt();
-                workflowDialog.appendLog("④ 视频 [" + vm + "] 模式:" + ((ff != null || lf != null) ? "keyframe" : "text"));
-                String taskId = api.generateVideo(getVideoBaseUrl(), getVideoKey(), vm, input, ff, lf, neg);
+                workflowDialog.appendLog("④ 视频 [" + videoModel + "] 模式:" + ((ff != null || lf != null) ? "keyframe" : "text"));
+                String taskId = api.generateVideo(getVideoBaseUrl(), getVideoKey(), videoModel, input, ff, lf, neg);
                 workflowDialog.appendLog("任务ID: " + taskId);
 
                 String videoPath = null;
                 for (int i = 0; i < 120; i++) {
                     if (workflowDialog.isCancelled()) return;
                     Thread.sleep(5000);
-                    org.json.JSONObject st = api.getVideoStatus(taskId, vm);
+                    org.json.JSONObject st = api.getVideoStatus(taskId, videoModel);
                     String state = st.optString("status", "");
                     workflowDialog.appendLog("轮询 #" + (i + 1) + " - " + state);
                     if ("completed".equals(state) || "success".equals(state)) {
