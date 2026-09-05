@@ -1,6 +1,5 @@
 package com.agnes.studio;
 
-import android.media.MediaPlayer;
 import android.os.Bundle;
 import android.os.Handler;
 import android.view.View;

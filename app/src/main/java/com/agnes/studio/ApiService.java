@@ -8,6 +8,7 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
@@ -463,7 +464,10 @@ public class ApiService {
      * 将本地图片转为 base64 Data URI，供 keyframe 使用
      */
     public String fileToDataUri(File file) throws IOException {
-        byte[] bytes = java.nio.file.Files.readAllBytes(file.toPath());
+        java.io.FileInputStream fis = new java.io.FileInputStream(file);
+        byte[] bytes = new byte[(int) file.length()];
+        fis.read(bytes);
+        fis.close();
         String ext = file.getName().substring(file.getName().lastIndexOf('.') + 1).toLowerCase();
         String mime = "png".equals(ext) ? "image/png" : "image/jpeg";
         String base64 = android.util.Base64.encodeToString(bytes, android.util.Base64.NO_WRAP);
