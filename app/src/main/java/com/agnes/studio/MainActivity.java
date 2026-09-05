@@ -1,12 +1,13 @@
 package com.agnes.studio;
 
-import android.app.ProgressDialog;
 import android.content.Intent;
 import android.graphics.BitmapFactory;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Environment;
 import android.provider.MediaStore;
+import android.text.Editable;
+import android.text.TextWatcher;
 import android.view.View;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
@@ -19,7 +20,6 @@ import android.widget.Toast;
 
 import androidx.appcompat.app.ActionBarDrawerToggle;
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.core.content.FileProvider;
 import androidx.drawerlayout.widget.DrawerLayout;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
@@ -40,7 +40,9 @@ import java.util.Locale;
 public class MainActivity extends AppCompatActivity {
 
     private ApiService api;
+    private CacheManager cache;
     private DrawerLayout drawerLayout;
+    private WorkflowDialog workflowDialog;
     private static final int REQ_FIRST_FRAME = 1001;
     private static final int REQ_LAST_FRAME = 1002;
 
@@ -88,11 +90,16 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         api = new ApiService(this);
+        cache = new CacheManager(this);
+        workflowDialog = new WorkflowDialog(this);
+
         initToolbar();
         initDrawer();
         initMainContent();
         initDrawerContent();
         loadConfig();
+        loadCachedData();
+        setupAutoSave();
     }
 
     private void initToolbar() {
@@ -143,7 +150,10 @@ public class MainActivity extends AppCompatActivity {
         findViewById(R.id.btn_gen_image).setOnClickListener(v -> generateImage());
         findViewById(R.id.btn_gen_video).setOnClickListener(v -> generateVideo());
         findViewById(R.id.btn_generate).setOnClickListener(v -> generateDrama());
-        findViewById(R.id.btn_clear_log).setOnClickListener(v -> { tvLog.setText(""); appendLog("日志已清空"); });
+        findViewById(R.id.btn_clear_log).setOnClickListener(v -> {
+            tvLog.setText("");
+            appendLog("日志已清空");
+        });
     }
 
     private void setupPromptSpinner() {
@@ -188,7 +198,6 @@ public class MainActivity extends AppCompatActivity {
         etShotsPrompt = findViewById(R.id.drawer_et_shots_prompt);
         etNegativePrompt = findViewById(R.id.drawer_et_negative_prompt);
 
-        // URL 下拉
         List<String> urlNames = new ArrayList<>();
         for (String[] item : ApiService.API_URLS) urlNames.add(item[0]);
         urlNames.add("自定义");
@@ -197,16 +206,13 @@ public class MainActivity extends AppCompatActivity {
         spImageUrl.setAdapter(new ArrayAdapter<>(this, android.R.layout.simple_spinner_item, urlNames));
         spVideoUrl.setAdapter(new ArrayAdapter<>(this, android.R.layout.simple_spinner_item, urlNames));
 
-        // 模型下拉
         setupModelSpinner(spTextModel, ApiService.TEXT_MODELS, etTextCustomModel);
         setupModelSpinner(spImageModel, ApiService.IMAGE_MODELS, etImageCustomModel);
         setupModelSpinner(spVideoModel, ApiService.VIDEO_MODELS, etVideoCustomModel);
 
-        // 视频模式
         String[] videoModes = {"text（文字生成）", "keyframe（首帧控制）", "keyframe（尾帧控制）", "keyframe（首尾帧控制）"};
         spVideoMode.setAdapter(new ArrayAdapter<>(this, android.R.layout.simple_spinner_item, videoModes));
 
-        // URL 选择监听
         spTextUrl.setOnItemSelectedListener(new SimpleItemSelectedListener(pos ->
                 etTextCustomUrl.setVisibility(pos >= ApiService.API_URLS.length ? View.VISIBLE : View.GONE)));
         spImageUrl.setOnItemSelectedListener(new SimpleItemSelectedListener(pos ->
@@ -214,7 +220,6 @@ public class MainActivity extends AppCompatActivity {
         spVideoUrl.setOnItemSelectedListener(new SimpleItemSelectedListener(pos ->
                 etVideoCustomUrl.setVisibility(pos >= ApiService.API_URLS.length ? View.VISIBLE : View.GONE)));
 
-        // 首帧选择
         findViewById(R.id.drawer_btn_pick_first_frame).setOnClickListener(v -> {
             Intent intent = new Intent(Intent.ACTION_PICK, MediaStore.Images.Media.EXTERNAL_CONTENT_URI);
             startActivityForResult(intent, REQ_FIRST_FRAME);
@@ -225,7 +230,6 @@ public class MainActivity extends AppCompatActivity {
             tvFirstFrameName.setText("未选择");
         });
 
-        // 尾帧选择
         findViewById(R.id.drawer_btn_pick_last_frame).setOnClickListener(v -> {
             Intent intent = new Intent(Intent.ACTION_PICK, MediaStore.Images.Media.EXTERNAL_CONTENT_URI);
             startActivityForResult(intent, REQ_LAST_FRAME);
@@ -236,52 +240,71 @@ public class MainActivity extends AppCompatActivity {
             tvLastFrameName.setText("未选择");
         });
 
-        // 保存
-        findViewById(R.id.drawer_btn_save_config).setOnClickListener(v -> { saveConfig(); Toast.makeText(this, "已保存", Toast.LENGTH_SHORT).show(); });
-
-        etScriptPrompt.setText(PromptTemplates.DEFAULT_SCRIPT_SYSTEM);
-        etShotsPrompt.setText(PromptTemplates.DEFAULT_SHOTS_SYSTEM);
+        findViewById(R.id.drawer_btn_save_config).setOnClickListener(v -> {
+            saveConfig();
+            Toast.makeText(this, "配置已保存", Toast.LENGTH_SHORT).show();
+        });
     }
 
-    @Override
-    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
-        super.onActivityResult(requestCode, resultCode, data);
-        if (resultCode != RESULT_OK || data == null) return;
-        try {
-            Uri uri = data.getData();
-            InputStream is = getContentResolver().openInputStream(uri);
-            if (requestCode == REQ_FIRST_FRAME) {
-                firstFrameFile = new File(getCacheDir(), "first_frame.jpg");
-                copyStreamToFile(is, firstFrameFile);
-                ivFirstFrame.setImageBitmap(BitmapFactory.decodeFile(firstFrameFile.getAbsolutePath()));
-                tvFirstFrameName.setText(firstFrameFile.getName());
-            } else if (requestCode == REQ_LAST_FRAME) {
-                lastFrameFile = new File(getCacheDir(), "last_frame.jpg");
-                copyStreamToFile(is, lastFrameFile);
-                ivLastFrame.setImageBitmap(BitmapFactory.decodeFile(lastFrameFile.getAbsolutePath()));
-                tvLastFrameName.setText(lastFrameFile.getName());
+    // ==================== 自动保存 ====================
+
+    private void setupAutoSave() {
+        etInput.addTextChangedListener(new SimpleTextWatcher() {
+            @Override public void afterTextChanged(Editable s) {
+                cache.saveInput(s.toString());
             }
-            if (is != null) is.close();
-        } catch (Exception e) {
-            Toast.makeText(this, "选择图片失败: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+        });
+    }
+
+    private void loadCachedData() {
+        String cachedInput = cache.loadInput();
+        if (!cachedInput.isEmpty()) etInput.setText(cachedInput);
+
+        String cachedScriptPrompt = cache.loadScriptPrompt();
+        if (!cachedScriptPrompt.isEmpty()) etScriptPrompt.setText(cachedScriptPrompt);
+
+        String cachedShotsPrompt = cache.loadShotsPrompt();
+        if (!cachedShotsPrompt.isEmpty()) etShotsPrompt.setText(cachedShotsPrompt);
+
+        String cachedNeg = cache.loadNegativePrompt();
+        if (!cachedNeg.isEmpty()) etNegativePrompt.setText(cachedNeg);
+
+        lastScript = cache.loadLastScript();
+        lastShots = cache.loadLastShots();
+
+        if (lastScript != null && !lastScript.isEmpty()) {
+            showTextAsset("=== 上次剧本 ===\n\n" + lastScript);
+            appendLog("已恢复上次剧本");
+        }
+        if (lastShots != null && !lastShots.isEmpty()) {
+            showTextAsset("=== 上次分镜 ===\n\n" + lastShots);
+            appendLog("已恢复上次分镜");
+        }
+
+        List<String> imagePaths = cache.getAssets("image");
+        for (String path : imagePaths) {
+            File f = new File(path);
+            if (f.exists()) showImageAsset(f);
+        }
+
+        List<String> videoPaths = cache.getAssets("video");
+        for (String path : videoPaths) {
+            File f = new File(path);
+            if (f.exists()) showVideoAsset(f);
+        }
+
+        if (!imagePaths.isEmpty() || !videoPaths.isEmpty() || (lastScript != null && !lastScript.isEmpty())) {
+            appendLog("已从缓存恢复 " + imagePaths.size() + " 张图片, " + videoPaths.size() + " 个视频");
         }
     }
 
-    private void copyStreamToFile(InputStream is, File file) throws IOException {
-        FileOutputStream fos = new FileOutputStream(file);
-        byte[] buf = new byte[4096];
-        int len;
-        while ((len = is.read(buf)) > 0) fos.write(buf, 0, len);
-        fos.close();
-    }
-
-    private void setupModelSpinner(Spinner spinner, String[][] models, EditText customEt) {
-        List<String> names = new ArrayList<>();
-        for (String[] m : models) names.add(m[1]);
-        names.add("自定义");
-        spinner.setAdapter(new ArrayAdapter<>(this, android.R.layout.simple_spinner_item, names));
-        spinner.setOnItemSelectedListener(new SimpleItemSelectedListener(pos ->
-                customEt.setVisibility(pos >= models.length ? View.VISIBLE : View.GONE)));
+    @Override
+    protected void onPause() {
+        super.onPause();
+        saveConfig();
+        cache.saveScriptPrompt(etScriptPrompt.getText().toString().trim());
+        cache.saveShotsPrompt(etShotsPrompt.getText().toString().trim());
+        cache.saveNegativePrompt(etNegativePrompt.getText().toString().trim());
     }
 
     // ==================== 配置 ====================
@@ -323,11 +346,6 @@ public class MainActivity extends AppCompatActivity {
         saveSection("text", spTextUrl, etTextCustomUrl, etTextKey, spTextModel, etTextCustomModel, ApiService.TEXT_MODELS);
         saveSection("image", spImageUrl, etImageCustomUrl, etImageKey, spImageModel, etImageCustomModel, ApiService.IMAGE_MODELS);
         saveSection("video", spVideoUrl, etVideoCustomUrl, etVideoKey, spVideoModel, etVideoCustomModel, ApiService.VIDEO_MODELS);
-        getSharedPreferences("agnes_prefs", MODE_PRIVATE).edit()
-                .putString("script_prompt", etScriptPrompt.getText().toString().trim())
-                .putString("shots_prompt", etShotsPrompt.getText().toString().trim())
-                .putString("negative_prompt", etNegativePrompt.getText().toString().trim())
-                .apply();
     }
 
     private void saveSection(String section, Spinner urlSpinner, EditText customUrlEt, EditText keyEt,
@@ -339,6 +357,47 @@ public class MainActivity extends AppCompatActivity {
         int modelPos = modelSpinner.getSelectedItemPosition();
         if (modelPos < models.length) api.setSectionModel(section, models[modelPos][0]);
         else { api.setSectionModel(section, "custom"); api.setSectionCustomModel(section, customModelEt.getText().toString().trim()); }
+    }
+
+    private void setupModelSpinner(Spinner spinner, String[][] models, EditText customEt) {
+        List<String> names = new ArrayList<>();
+        for (String[] m : models) names.add(m[1]);
+        names.add("自定义");
+        spinner.setAdapter(new ArrayAdapter<>(this, android.R.layout.simple_spinner_item, names));
+        spinner.setOnItemSelectedListener(new SimpleItemSelectedListener(pos ->
+                customEt.setVisibility(pos >= models.length ? View.VISIBLE : View.GONE)));
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        if (resultCode != RESULT_OK || data == null) return;
+        try {
+            Uri uri = data.getData();
+            InputStream is = getContentResolver().openInputStream(uri);
+            if (requestCode == REQ_FIRST_FRAME) {
+                firstFrameFile = new File(getCacheDir(), "first_frame.jpg");
+                copyStreamToFile(is, firstFrameFile);
+                ivFirstFrame.setImageBitmap(BitmapFactory.decodeFile(firstFrameFile.getAbsolutePath()));
+                tvFirstFrameName.setText(firstFrameFile.getName());
+            } else if (requestCode == REQ_LAST_FRAME) {
+                lastFrameFile = new File(getCacheDir(), "last_frame.jpg");
+                copyStreamToFile(is, lastFrameFile);
+                ivLastFrame.setImageBitmap(BitmapFactory.decodeFile(lastFrameFile.getAbsolutePath()));
+                tvLastFrameName.setText(lastFrameFile.getName());
+            }
+            if (is != null) is.close();
+        } catch (Exception e) {
+            Toast.makeText(this, "选择图片失败: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    private void copyStreamToFile(InputStream is, File file) throws IOException {
+        FileOutputStream fos = new FileOutputStream(file);
+        byte[] buf = new byte[4096];
+        int len;
+        while ((len = is.read(buf)) > 0) fos.write(buf, 0, len);
+        fos.close();
     }
 
     // ==================== 工具 ====================
@@ -385,6 +444,7 @@ public class MainActivity extends AppCompatActivity {
         rvImages.setVisibility(View.VISIBLE);
         imageAdapter.addItem(file);
         tvEmpty.setVisibility(View.GONE);
+        cache.addAsset("image", file.getAbsolutePath(), System.currentTimeMillis());
     }
 
     private void showVideoAsset(File file) {
@@ -392,6 +452,7 @@ public class MainActivity extends AppCompatActivity {
         rvVideos.setVisibility(View.VISIBLE);
         videoAdapter.addItem(file);
         tvEmpty.setVisibility(View.GONE);
+        cache.addAsset("video", file.getAbsolutePath(), System.currentTimeMillis());
     }
 
     private void showTextAsset(String text) {
@@ -400,8 +461,6 @@ public class MainActivity extends AppCompatActivity {
         tvTextAssets.append(text + "\n\n");
         tvEmpty.setVisibility(View.GONE);
     }
-
-    // ==================== 视频播放器 ====================
 
     private void playVideo(File file) {
         Intent intent = new Intent(this, VideoPlayerActivity.class);
@@ -415,31 +474,57 @@ public class MainActivity extends AppCompatActivity {
         String input = etInput.getText().toString().trim();
         if (input.isEmpty()) { Toast.makeText(this, "请输入主题", Toast.LENGTH_SHORT).show(); return; }
         if (getTextKey().isEmpty()) { Toast.makeText(this, "请先配置文本 API Key", Toast.LENGTH_SHORT).show(); return; }
-        ProgressDialog pd = new ProgressDialog(this); pd.setTitle("① 生成剧本"); pd.setMessage("正在生成..."); pd.setCancelable(false); pd.show();
+
+        workflowDialog.show();
+        workflowDialog.setStepActive(1);
+        workflowDialog.appendLog("开始生成剧本...");
+        workflowDialog.appendLog("模型: " + getTextModel());
+
         new Thread(() -> {
             try {
                 String sp = etScriptPrompt.getText().toString().trim();
                 if (sp.isEmpty()) sp = PromptTemplates.DEFAULT_SCRIPT_SYSTEM;
-                appendLog("① 生成剧本 [" + getTextModel() + "]");
+                workflowDialog.appendLog("系统提示词: " + sp.substring(0, Math.min(50, sp.length())) + "...");
                 String result = api.chatCompletion(getTextBaseUrl(), getTextKey(), getTextModel(), input, sp);
                 lastScript = result;
-                runOnUiThread(() -> { pd.dismiss(); showTextAsset("=== 剧本 ===\n\n" + result); appendLog("剧本完成"); });
-            } catch (IOException e) { runOnUiThread(() -> { pd.dismiss(); appendLog("失败: " + e.getMessage()); Toast.makeText(this, e.getMessage(), Toast.LENGTH_LONG).show(); }); }
+                cache.saveLastScript(result);
+                workflowDialog.setStepDone(1);
+                workflowDialog.appendLog("剧本完成 (" + result.length() + " 字)");
+                runOnUiThread(() -> showTextAsset("=== 剧本 ===\n\n" + result));
+            } catch (IOException e) {
+                workflowDialog.setStepError(1, e.getMessage());
+                workflowDialog.appendLog("错误: " + e.getMessage());
+            }
+            workflowDialog.dismiss();
+            runOnUiThread(() -> appendLog("剧本生成完成"));
         }).start();
     }
 
     private void generateShots() {
         if (lastScript == null || lastScript.isEmpty()) { Toast.makeText(this, "请先生成剧本", Toast.LENGTH_SHORT).show(); return; }
-        ProgressDialog pd = new ProgressDialog(this); pd.setTitle("② 生成分镜"); pd.setMessage("正在生成..."); pd.setCancelable(false); pd.show();
+
+        workflowDialog.show();
+        workflowDialog.setStepActive(1);
+        workflowDialog.setStepDone(1);
+        workflowDialog.setStepActive(2);
+        workflowDialog.appendLog("开始生成分镜...");
+
         new Thread(() -> {
             try {
                 String sp = etShotsPrompt.getText().toString().trim();
                 if (sp.isEmpty()) sp = PromptTemplates.DEFAULT_SHOTS_SYSTEM;
-                appendLog("② 生成分镜 [" + getTextModel() + "]");
                 String result = api.chatCompletion(getTextBaseUrl(), getTextKey(), getTextModel(), lastScript, sp);
                 lastShots = result;
-                runOnUiThread(() -> { pd.dismiss(); showTextAsset("=== 分镜 ===\n\n" + result); appendLog("分镜完成"); });
-            } catch (IOException e) { runOnUiThread(() -> { pd.dismiss(); appendLog("失败: " + e.getMessage()); }); }
+                cache.saveLastShots(result);
+                workflowDialog.setStepDone(2);
+                workflowDialog.appendLog("分镜完成 (" + result.length() + " 字)");
+                runOnUiThread(() -> showTextAsset("=== 分镜 ===\n\n" + result));
+            } catch (IOException e) {
+                workflowDialog.setStepError(2, e.getMessage());
+                workflowDialog.appendLog("错误: " + e.getMessage());
+            }
+            workflowDialog.dismiss();
+            runOnUiThread(() -> appendLog("分镜生成完成"));
         }).start();
     }
 
@@ -447,17 +532,29 @@ public class MainActivity extends AppCompatActivity {
         String input = etInput.getText().toString().trim();
         if (input.isEmpty()) { Toast.makeText(this, "请输入图片描述", Toast.LENGTH_SHORT).show(); return; }
         if (getImageKey().isEmpty()) { Toast.makeText(this, "请先配置图片 API Key", Toast.LENGTH_SHORT).show(); return; }
-        ProgressDialog pd = new ProgressDialog(this); pd.setTitle("③ 文生图"); pd.setMessage("正在生成..."); pd.setCancelable(false); pd.show();
+
+        workflowDialog.show();
+        workflowDialog.setStepActive(3);
+        workflowDialog.appendLog("开始生成图片...");
+        workflowDialog.appendLog("模型: " + getImageModel());
+
         new Thread(() -> {
             try {
-                appendLog("③ 文生图 [" + getImageModel() + "]");
                 String imageUrl = api.generateImage(getImageBaseUrl(), getImageKey(), getImageModel(), input);
+                workflowDialog.appendLog("图片 URL 获取成功, 下载中...");
                 byte[] data = api.downloadFile(imageUrl);
                 File file = new File(getExternalFilesDir(Environment.DIRECTORY_PICTURES), "agnes_" + System.currentTimeMillis() + ".png");
                 FileOutputStream fos = new FileOutputStream(file); fos.write(data); fos.close();
                 lastImagePath = file.getAbsolutePath();
-                runOnUiThread(() -> { pd.dismiss(); showImageAsset(file); appendLog("图片完成: " + file.getName()); });
-            } catch (IOException e) { runOnUiThread(() -> { pd.dismiss(); appendLog("失败: " + e.getMessage()); }); }
+                workflowDialog.setStepDone(3);
+                workflowDialog.appendLog("图片完成: " + file.getName());
+                runOnUiThread(() -> showImageAsset(file));
+            } catch (IOException e) {
+                workflowDialog.setStepError(3, e.getMessage());
+                workflowDialog.appendLog("错误: " + e.getMessage());
+            }
+            workflowDialog.dismiss();
+            runOnUiThread(() -> appendLog("图片生成完成"));
         }).start();
     }
 
@@ -465,34 +562,58 @@ public class MainActivity extends AppCompatActivity {
         String input = etInput.getText().toString().trim();
         if (input.isEmpty()) { Toast.makeText(this, "请输入视频描述", Toast.LENGTH_SHORT).show(); return; }
         if (getVideoKey().isEmpty()) { Toast.makeText(this, "请先配置视频 API Key", Toast.LENGTH_SHORT).show(); return; }
-        ProgressDialog pd = new ProgressDialog(this); pd.setTitle("④ 生成视频"); pd.setMessage("正在提交..."); pd.setCancelable(false); pd.show();
+
+        workflowDialog.show();
+        workflowDialog.setStepActive(4);
+        workflowDialog.appendLog("开始生成视频...");
+        workflowDialog.appendLog("模型: " + getVideoModel());
+
+        String ff = shouldUseFirstFrame() ? getFirstFrameUri() : null;
+        String lf = shouldUseLastFrame() ? getLastFrameUri() : null;
+        String neg = getNegativePrompt();
+        String mode = (ff != null || lf != null) ? "keyframe" : "text";
+        workflowDialog.appendLog("模式: " + mode);
+        if (ff != null) workflowDialog.appendLog("已添加首帧图片");
+        if (lf != null) workflowDialog.appendLog("已添加尾帧图片");
+        if (!neg.isEmpty()) workflowDialog.appendLog("负面提示词: " + neg);
+
         new Thread(() -> {
             try {
-                String ff = shouldUseFirstFrame() ? getFirstFrameUri() : null;
-                String lf = shouldUseLastFrame() ? getLastFrameUri() : null;
-                String neg = getNegativePrompt();
-                String mode = (ff != null || lf != null) ? "keyframe" : "text";
-                appendLog("④ 视频 [" + getVideoModel() + "] 模式:" + mode);
                 String taskId = api.generateVideo(getVideoBaseUrl(), getVideoKey(), getVideoModel(), input, ff, lf, neg);
-                appendLog("任务ID: " + taskId);
+                workflowDialog.appendLog("任务ID: " + taskId);
                 for (int i = 0; i < 120; i++) {
+                    if (workflowDialog.isCancelled()) { workflowDialog.appendLog("已取消"); return; }
                     Thread.sleep(5000);
                     org.json.JSONObject status = api.getVideoStatus(taskId, getVideoModel());
                     String state = status.optString("status", "");
+                    final int sec = (i + 1) * 5;
+                    workflowDialog.appendLog("轮询 #" + (i + 1) + " - 状态: " + state + " (" + sec + "秒)");
                     if ("completed".equals(state) || "success".equals(state)) {
                         String videoUrl = status.optString("video_url", "");
-                        if (videoUrl.isEmpty()) { org.json.JSONObject meta = status.optJSONObject("metadata"); if (meta != null) videoUrl = meta.optString("url", ""); }
+                        if (videoUrl.isEmpty()) {
+                            org.json.JSONObject meta = status.optJSONObject("metadata");
+                            if (meta != null) videoUrl = meta.optString("url", "");
+                        }
+                        workflowDialog.appendLog("下载视频...");
                         byte[] data = api.downloadFile(videoUrl);
                         File file = new File(getExternalFilesDir(Environment.DIRECTORY_MOVIES), "agnes_" + System.currentTimeMillis() + ".mp4");
                         FileOutputStream fos = new FileOutputStream(file); fos.write(data); fos.close();
-                        runOnUiThread(() -> { pd.dismiss(); showVideoAsset(file); appendLog("视频完成: " + file.getName()); });
-                        return;
-                    } else if ("failed".equals(state)) { throw new IOException("视频生成失败"); }
-                    final int sec = (i + 1) * 5;
-                    runOnUiThread(() -> pd.setMessage("生成中... " + sec + "秒"));
+                        workflowDialog.setStepDone(4);
+                        workflowDialog.appendLog("视频完成: " + file.getName());
+                        runOnUiThread(() -> showVideoAsset(file));
+                        break;
+                    } else if ("failed".equals(state)) {
+                        workflowDialog.setStepError(4, "生成失败");
+                        workflowDialog.appendLog("视频生成失败");
+                        break;
+                    }
                 }
-                throw new IOException("超时");
-            } catch (IOException | InterruptedException e) { runOnUiThread(() -> { pd.dismiss(); appendLog("失败: " + e.getMessage()); }); }
+            } catch (IOException | InterruptedException e) {
+                workflowDialog.setStepError(4, e.getMessage());
+                workflowDialog.appendLog("错误: " + e.getMessage());
+            }
+            workflowDialog.dismiss();
+            runOnUiThread(() -> appendLog("视频生成完成"));
         }).start();
     }
 
@@ -501,46 +622,97 @@ public class MainActivity extends AppCompatActivity {
         if (input.isEmpty()) { Toast.makeText(this, "请输入短剧主题", Toast.LENGTH_SHORT).show(); return; }
         if (getTextKey().isEmpty()) { Toast.makeText(this, "请先配置文本 API Key", Toast.LENGTH_SHORT).show(); return; }
         findViewById(R.id.btn_generate).setEnabled(false);
-        ProgressDialog pd = new ProgressDialog(this); pd.setTitle("一键生成短剧"); pd.setMessage("准备中..."); pd.setCancelable(false); pd.show();
+
+        workflowDialog.show();
+        workflowDialog.setProgress("🚀 一键生成短剧");
+        workflowDialog.appendLog("主题: " + input);
+
+        String tm = getTextModel(), im = getImageModel(), vm = getVideoModel();
+        String sp = etScriptPrompt.getText().toString().trim(); if (sp.isEmpty()) sp = PromptTemplates.DEFAULT_SCRIPT_SYSTEM;
+        String shp = etShotsPrompt.getText().toString().trim(); if (shp.isEmpty()) shp = PromptTemplates.DEFAULT_SHOTS_SYSTEM;
+
         new Thread(() -> {
             try {
-                String tm = getTextModel(), im = getImageModel(), vm = getVideoModel();
-                String sp = etScriptPrompt.getText().toString().trim(); if (sp.isEmpty()) sp = PromptTemplates.DEFAULT_SCRIPT_SYSTEM;
-                String shp = etShotsPrompt.getText().toString().trim(); if (shp.isEmpty()) shp = PromptTemplates.DEFAULT_SHOTS_SYSTEM;
-                pd.setMessage("① 剧本..."); appendLog("===== 全流程 =====");
-                String script = api.chatCompletion(getTextBaseUrl(), getTextKey(), tm, input, sp); lastScript = script;
-                pd.setMessage("② 分镜..."); String shots = api.chatCompletion(getTextBaseUrl(), getTextKey(), tm, script, shp); lastShots = shots;
-                pd.setMessage("③ 图片..."); String img = api.generateImage(getImageBaseUrl(), getImageKey(), im, input);
-                pd.setMessage("④ 视频...");
+                workflowDialog.setStepActive(1);
+                workflowDialog.appendLog("① 生成剧本 [" + tm + "]");
+                String script = api.chatCompletion(getTextBaseUrl(), getTextKey(), tm, input, sp);
+                lastScript = script;
+                cache.saveLastScript(script);
+                workflowDialog.setStepDone(1);
+                workflowDialog.appendLog("剧本完成 (" + script.length() + " 字)");
+
+                workflowDialog.setStepActive(2);
+                workflowDialog.appendLog("② 生成分镜 [" + tm + "]");
+                String shots = api.chatCompletion(getTextBaseUrl(), getTextKey(), tm, script, shp);
+                lastShots = shots;
+                cache.saveLastShots(shots);
+                workflowDialog.setStepDone(2);
+                workflowDialog.appendLog("分镜完成 (" + shots.length() + " 字)");
+
+                workflowDialog.setStepActive(3);
+                workflowDialog.appendLog("③ 文生图 [" + im + "]");
+                String img = api.generateImage(getImageBaseUrl(), getImageKey(), im, input);
+                workflowDialog.appendLog("图片 URL 获取成功");
+
+                workflowDialog.setStepActive(4);
                 String ff = shouldUseFirstFrame() ? getFirstFrameUri() : null;
                 String lf = shouldUseLastFrame() ? getLastFrameUri() : null;
                 String neg = getNegativePrompt();
+                workflowDialog.appendLog("④ 视频 [" + vm + "] 模式:" + ((ff != null || lf != null) ? "keyframe" : "text"));
                 String taskId = api.generateVideo(getVideoBaseUrl(), getVideoKey(), vm, input, ff, lf, neg);
+                workflowDialog.appendLog("任务ID: " + taskId);
+
                 String videoPath = null;
                 for (int i = 0; i < 120; i++) {
+                    if (workflowDialog.isCancelled()) return;
                     Thread.sleep(5000);
                     org.json.JSONObject st = api.getVideoStatus(taskId, vm);
                     String state = st.optString("status", "");
+                    workflowDialog.appendLog("轮询 #" + (i + 1) + " - " + state);
                     if ("completed".equals(state) || "success".equals(state)) {
                         String vu = st.optString("video_url", "");
-                        if (vu.isEmpty()) { org.json.JSONObject meta = st.optJSONObject("metadata"); if (meta != null) vu = meta.optString("url", ""); }
+                        if (vu.isEmpty()) {
+                            org.json.JSONObject meta = st.optJSONObject("metadata");
+                            if (meta != null) vu = meta.optString("url", "");
+                        }
+                        workflowDialog.appendLog("下载视频...");
                         byte[] vd = api.downloadFile(vu);
                         File vf = new File(getExternalFilesDir(Environment.DIRECTORY_MOVIES), "drama_" + System.currentTimeMillis() + ".mp4");
-                        FileOutputStream fos = new FileOutputStream(vf); fos.write(vd); fos.close(); videoPath = vf.getAbsolutePath();
+                        FileOutputStream fos = new FileOutputStream(vf); fos.write(vd); fos.close();
+                        videoPath = vf.getAbsolutePath();
                         break;
                     } else if ("failed".equals(state)) throw new IOException("视频失败");
-                    pd.setMessage("等待视频 " + ((i+1)*5) + "秒");
                 }
+
+                workflowDialog.appendLog("下载图片...");
                 byte[] imgData = api.downloadFile(img);
                 File imgFile = new File(getExternalFilesDir(Environment.DIRECTORY_PICTURES), "drama_" + System.currentTimeMillis() + ".png");
                 FileOutputStream imgFos = new FileOutputStream(imgFile); imgFos.write(imgData); imgFos.close();
-                final String vp = videoPath; final File imgFinal = imgFile;
-                runOnUiThread(() -> { pd.dismiss(); findViewById(R.id.btn_generate).setEnabled(true);
-                    showTextAsset("=== 剧本 ===\n\n" + script); showTextAsset("=== 分镜 ===\n\n" + shots);
-                    showImageAsset(imgFinal); if (vp != null) showVideoAsset(new File(vp)); appendLog("===== 完成 ====="); });
-            } catch (Exception e) { runOnUiThread(() -> { pd.dismiss(); findViewById(R.id.btn_generate).setEnabled(true); appendLog("失败: " + e.getMessage()); }); }
+
+                workflowDialog.setStepDone(3);
+                workflowDialog.setStepDone(4);
+                workflowDialog.appendLog("===== 全部完成 =====");
+
+                final String vp = videoPath;
+                final File imgFinal = imgFile;
+                runOnUiThread(() -> {
+                    showTextAsset("=== 剧本 ===\n\n" + script);
+                    showTextAsset("=== 分镜 ===\n\n" + shots);
+                    showImageAsset(imgFinal);
+                    if (vp != null) showVideoAsset(new File(vp));
+                });
+            } catch (Exception e) {
+                workflowDialog.appendLog("错误: " + e.getMessage());
+            }
+            workflowDialog.dismiss();
+            runOnUiThread(() -> {
+                findViewById(R.id.btn_generate).setEnabled(true);
+                appendLog("全流程完成");
+            });
         }).start();
     }
+
+    // ==================== 内部类 ====================
 
     private static class SimpleItemSelectedListener implements android.widget.AdapterView.OnItemSelectedListener {
         private final OnSelectListener l;
@@ -548,5 +720,10 @@ public class MainActivity extends AppCompatActivity {
         SimpleItemSelectedListener(OnSelectListener l) { this.l = l; }
         @Override public void onItemSelected(android.widget.AdapterView<?> p, View v, int pos, long id) { l.onSelected(pos); }
         @Override public void onNothingSelected(android.widget.AdapterView<?> p) {}
+    }
+
+    private static abstract class SimpleTextWatcher implements TextWatcher {
+        @Override public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
+        @Override public void onTextChanged(CharSequence s, int start, int before, int count) {}
     }
 }
