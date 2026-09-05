@@ -422,7 +422,7 @@ public class MainActivity extends AppCompatActivity {
                 // 轮询等待
                 for (int i = 0; i < 120; i++) {
                     Thread.sleep(5000);
-                    var status = api.getVideoStatus(taskId);
+                    org.json.JSONObject status = api.getVideoStatus(taskId);
                     String state = status.optString("status", "");
 
                     if ("completed".equals(state) || "success".equals(state)) {
@@ -508,7 +508,7 @@ public class MainActivity extends AppCompatActivity {
                 String videoPath = null;
                 for (int i = 0; i < 120; i++) {
                     Thread.sleep(5000);
-                    var status = api.getVideoStatus(taskId);
+                    org.json.JSONObject status = api.getVideoStatus(taskId);
                     String state = status.optString("status", "");
                     if ("completed".equals(state) || "success".equals(state)) {
                         String videoUrl = status.optString("video_url", "");
