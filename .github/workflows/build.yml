@@ -28,30 +28,19 @@ jobs:
     - name: Build Debug APK
       run: ./gradlew assembleDebug
 
-    - name: Build Release APK
-      run: ./gradlew assembleRelease
-
     - name: Upload Debug APK
       uses: actions/upload-artifact@v4
       with:
         name: AgnesStudio-debug
         path: app/build/outputs/apk/debug/app-debug.apk
 
-    - name: Upload Release APK
-      uses: actions/upload-artifact@v4
-      with:
-        name: AgnesStudio-release
-        path: app/build/outputs/apk/release/app-release-unsigned.apk
-
     - name: Create Release
       if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-      uses: softprops/action-gh-release@v1
+      uses: softprops/action-gh-release@v2
       with:
         tag_name: v${{ github.run_number }}
         name: Release ${{ github.run_number }}
-        files: |
-          app/build/outputs/apk/debug/app-debug.apk
-          app/build/outputs/apk/release/app-release-unsigned.apk
+        files: app/build/outputs/apk/debug/app-debug.apk
         draft: true
         prerelease: false
       env:

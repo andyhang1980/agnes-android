@@ -20,6 +20,8 @@ import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
 
+import org.json.JSONObject;
+
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -337,7 +339,7 @@ public class MainActivity extends AppCompatActivity {
                 int maxAttempts = 120;
                 for (int i = 0; i < maxAttempts; i++) {
                     Thread.sleep(5000);
-                    var status = api.getVideoStatus(taskId);
+                    JSONObject status = api.getVideoStatus(taskId);
                     String state = status.optString("status", "");
 
                     if ("completed".equals(state) || "success".equals(state)) {
