@@ -475,236 +475,570 @@
     <!-- 侧边栏 -->
     <com.google.android.material.navigation.NavigationView
         android:id="@+id/nav_drawer"
-        android:layout_width="300dp"
+        android:layout_width="320dp"
         android:layout_height="match_parent"
         android:layout_gravity="start"
         android:fitsSystemWindows="true"
-        app:menu="@menu/nav_menu">
+        android:scrollbars="vertical">
 
         <ScrollView
             android:layout_width="match_parent"
             android:layout_height="match_parent"
-            android:paddingTop="8dp">
+            android:scrollbars="vertical"
+            android:fadeScrollbars="false"
+            android:scrollbarThumbVertical="@android:drawable/dark_vertical	scrollbar">
 
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
-                android:padding="12dp">
+                android:padding="12dp"
+                android:paddingTop="8dp">
 
-                <!-- 全局配置 -->
+                <!-- ========== 对话/文本 配置 ========== -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:layout_marginBottom="6dp">
+
+                    <View
+                        android:layout_width="4dp"
+                        android:layout_height="16dp"
+                        android:background="#E91E63"
+                        android:layout_marginEnd="6dp" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="对话/文本"
+                        android:textSize="14sp"
+                        android:textStyle="bold"
+                        android:textColor="#E91E63" />
+                </LinearLayout>
+
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="🔑 全局 API 配置"
-                    android:textSize="14sp"
-                    android:textStyle="bold"
-                    android:textColor="#333333"
-                    android:layout_marginBottom="6dp" />
+                    android:text="API 地址"
+                    android:textSize="10sp"
+                    android:textColor="#999999"
+                    android:layout_marginBottom="2dp" />
 
                 <Spinner
-                    android:id="@+id/drawer_sp_url"
-                    android:layout_width="match_parent"
-                    android:layout_height="38dp"
-                    android:background="@drawable/spinner_bg"
-                    android:layout_marginBottom="4dp" />
-
-                <EditText
-                    android:id="@+id/drawer_et_custom_url"
+                    android:id="@+id/drawer_sp_text_url"
                     android:layout_width="match_parent"
                     android:layout_height="34dp"
+                    android:background="@drawable/spinner_bg"
+                    android:layout_marginBottom="2dp" />
+
+                <EditText
+                    android:id="@+id/drawer_et_text_custom_url"
+                    android:layout_width="match_parent"
+                    android:layout_height="32dp"
                     android:hint="自定义地址"
-                    android:textSize="12sp"
-                    android:padding="6dp"
+                    android:textSize="11sp"
+                    android:padding="5dp"
                     android:background="@drawable/edit_bg"
-                    android:layout_marginBottom="4dp"
+                    android:singleLine="true"
+                    android:layout_marginBottom="2dp"
                     android:visibility="gone" />
 
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="API Key"
-                    android:textSize="11sp"
-                    android:textColor="#888888"
+                    android:textSize="10sp"
+                    android:textColor="#999999"
                     android:layout_marginBottom="2dp" />
 
                 <EditText
-                    android:id="@+id/drawer_et_api_key"
+                    android:id="@+id/drawer_et_text_key"
                     android:layout_width="match_parent"
-                    android:layout_height="34dp"
-                    android:hint="输入 Key"
-                    android:textSize="12sp"
-                    android:padding="6dp"
+                    android:layout_height="32dp"
+                    android:hint="sk-..."
+                    android:textSize="11sp"
+                    android:padding="5dp"
                     android:background="@drawable/edit_bg"
                     android:inputType="textPassword"
                     android:singleLine="true"
-                    android:layout_marginBottom="4dp" />
+                    android:layout_marginBottom="2dp" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="模型"
+                    android:textSize="10sp"
+                    android:textColor="#999999"
+                    android:layout_marginBottom="2dp" />
+
+                <Spinner
+                    android:id="@+id/drawer_sp_text_model"
+                    android:layout_width="match_parent"
+                    android:layout_height="34dp"
+                    android:background="@drawable/spinner_bg"
+                    android:layout_marginBottom="2dp" />
+
+                <EditText
+                    android:id="@+id/drawer_et_text_custom_model"
+                    android:layout_width="match_parent"
+                    android:layout_height="32dp"
+                    android:hint="自定义模型名"
+                    android:textSize="11sp"
+                    android:padding="5dp"
+                    android:background="@drawable/edit_bg"
+                    android:singleLine="true"
+                    android:layout_marginBottom="4dp"
+                    android:visibility="gone" />
+
+                <View
+                    android:layout_width="match_parent"
+                    android:layout_height="1dp"
+                    android:background="#F0F0F0"
+                    android:layout_marginBottom="8dp" />
+
+                <!-- ========== 文生图 配置 ========== -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:layout_marginBottom="6dp">
+
+                    <View
+                        android:layout_width="4dp"
+                        android:layout_height="16dp"
+                        android:background="#2196F3"
+                        android:layout_marginEnd="6dp" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="文生图"
+                        android:textSize="14sp"
+                        android:textStyle="bold"
+                        android:textColor="#2196F3" />
+                </LinearLayout>
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="API 地址"
+                    android:textSize="10sp"
+                    android:textColor="#999999"
+                    android:layout_marginBottom="2dp" />
+
+                <Spinner
+                    android:id="@+id/drawer_sp_image_url"
+                    android:layout_width="match_parent"
+                    android:layout_height="34dp"
+                    android:background="@drawable/spinner_bg"
+                    android:layout_marginBottom="2dp" />
+
+                <EditText
+                    android:id="@+id/drawer_et_image_custom_url"
+                    android:layout_width="match_parent"
+                    android:layout_height="32dp"
+                    android:hint="自定义地址"
+                    android:textSize="11sp"
+                    android:padding="5dp"
+                    android:background="@drawable/edit_bg"
+                    android:singleLine="true"
+                    android:layout_marginBottom="2dp"
+                    android:visibility="gone" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="API Key"
+                    android:textSize="10sp"
+                    android:textColor="#999999"
+                    android:layout_marginBottom="2dp" />
+
+                <EditText
+                    android:id="@+id/drawer_et_image_key"
+                    android:layout_width="match_parent"
+                    android:layout_height="32dp"
+                    android:hint="sk-..."
+                    android:textSize="11sp"
+                    android:padding="5dp"
+                    android:background="@drawable/edit_bg"
+                    android:inputType="textPassword"
+                    android:singleLine="true"
+                    android:layout_marginBottom="2dp" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="模型"
+                    android:textSize="10sp"
+                    android:textColor="#999999"
+                    android:layout_marginBottom="2dp" />
+
+                <Spinner
+                    android:id="@+id/drawer_sp_image_model"
+                    android:layout_width="match_parent"
+                    android:layout_height="34dp"
+                    android:background="@drawable/spinner_bg"
+                    android:layout_marginBottom="2dp" />
+
+                <EditText
+                    android:id="@+id/drawer_et_image_custom_model"
+                    android:layout_width="match_parent"
+                    android:layout_height="32dp"
+                    android:hint="自定义模型名"
+                    android:textSize="11sp"
+                    android:padding="5dp"
+                    android:background="@drawable/edit_bg"
+                    android:singleLine="true"
+                    android:layout_marginBottom="4dp"
+                    android:visibility="gone" />
+
+                <View
+                    android:layout_width="match_parent"
+                    android:layout_height="1dp"
+                    android:background="#F0F0F0"
+                    android:layout_marginBottom="8dp" />
+
+                <!-- ========== 图生视频 配置 ========== -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:layout_marginBottom="6dp">
+
+                    <View
+                        android:layout_width="4dp"
+                        android:layout_height="16dp"
+                        android:background="#FF5722"
+                        android:layout_marginEnd="6dp" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="图生视频"
+                        android:textSize="14sp"
+                        android:textStyle="bold"
+                        android:textColor="#FF5722" />
+                </LinearLayout>
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="API 地址"
+                    android:textSize="10sp"
+                    android:textColor="#999999"
+                    android:layout_marginBottom="2dp" />
+
+                <Spinner
+                    android:id="@+id/drawer_sp_video_url"
+                    android:layout_width="match_parent"
+                    android:layout_height="34dp"
+                    android:background="@drawable/spinner_bg"
+                    android:layout_marginBottom="2dp" />
+
+                <EditText
+                    android:id="@+id/drawer_et_video_custom_url"
+                    android:layout_width="match_parent"
+                    android:layout_height="32dp"
+                    android:hint="自定义地址"
+                    android:textSize="11sp"
+                    android:padding="5dp"
+                    android:background="@drawable/edit_bg"
+                    android:singleLine="true"
+                    android:layout_marginBottom="2dp"
+                    android:visibility="gone" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="API Key"
+                    android:textSize="10sp"
+                    android:textColor="#999999"
+                    android:layout_marginBottom="2dp" />
+
+                <EditText
+                    android:id="@+id/drawer_et_video_key"
+                    android:layout_width="match_parent"
+                    android:layout_height="32dp"
+                    android:hint="sk-..."
+                    android:textSize="11sp"
+                    android:padding="5dp"
+                    android:background="@drawable/edit_bg"
+                    android:inputType="textPassword"
+                    android:singleLine="true"
+                    android:layout_marginBottom="2dp" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="模型"
+                    android:textSize="10sp"
+                    android:textColor="#999999"
+                    android:layout_marginBottom="2dp" />
+
+                <Spinner
+                    android:id="@+id/drawer_sp_video_model"
+                    android:layout_width="match_parent"
+                    android:layout_height="34dp"
+                    android:background="@drawable/spinner_bg"
+                    android:layout_marginBottom="2dp" />
+
+                <EditText
+                    android:id="@+id/drawer_et_video_custom_model"
+                    android:layout_width="match_parent"
+                    android:layout_height="32dp"
+                    android:hint="自定义模型名"
+                    android:textSize="11sp"
+                    android:padding="5dp"
+                    android:background="@drawable/edit_bg"
+                    android:singleLine="true"
+                    android:layout_marginBottom="2dp"
+                    android:visibility="gone" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="视频模式"
+                    android:textSize="10sp"
+                    android:textColor="#999999"
+                    android:layout_marginBottom="2dp" />
+
+                <Spinner
+                    android:id="@+id/drawer_sp_video_mode"
+                    android:layout_width="match_parent"
+                    android:layout_height="34dp"
+                    android:background="@drawable/spinner_bg"
+                    android:layout_marginBottom="2dp" />
+
+                <!-- 首帧 -->
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="首帧图片（可选，保持角色一致）"
+                    android:textSize="10sp"
+                    android:textColor="#999999"
+                    android:layout_marginBottom="2dp" />
 
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:orientation="horizontal"
-                    android:layout_marginBottom="4dp">
+                    android:gravity="center_vertical"
+                    android:layout_marginBottom="2dp">
 
-                    <Button
-                        android:id="@+id/drawer_btn_add_key"
-                        android:layout_width="0dp"
-                        android:layout_height="30dp"
-                        android:layout_weight="1"
-                        android:text="+ 添加"
-                        android:textSize="10sp"
-                        android:backgroundTint="#2196F3"
-                        android:textColor="@android:color/white"
-                        android:layout_marginEnd="4dp" />
+                    <ImageView
+                        android:id="@+id/drawer_iv_first_frame"
+                        android:layout_width="48dp"
+                        android:layout_height="48dp"
+                        android:scaleType="centerCrop"
+                        android:background="@drawable/edit_bg"
+                        android:layout_marginEnd="6dp" />
 
-                    <Button
-                        android:id="@+id/drawer_btn_remove_key"
+                    <LinearLayout
                         android:layout_width="0dp"
-                        android:layout_height="30dp"
+                        android:layout_height="wrap_content"
                         android:layout_weight="1"
-                        android:text="- 删除"
-                        android:textSize="10sp"
-                        android:backgroundTint="#F44336"
-                        android:textColor="@android:color/white" />
+                        android:orientation="vertical">
+
+                        <TextView
+                            android:id="@+id/drawer_tv_first_frame_name"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:text="未选择"
+                            android:textSize="10sp"
+                            android:textColor="#AAAAAA"
+                            android:singleLine="true"
+                            android:ellipsize="start" />
+
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:orientation="horizontal">
+
+                            <Button
+                                android:id="@+id/drawer_btn_pick_first_frame"
+                                android:layout_width="0dp"
+                                android:layout_height="26dp"
+                                android:layout_weight="1"
+                                android:text="选择"
+                                android:textSize="9sp"
+                                android:backgroundTint="#2196F3"
+                                android:textColor="@android:color/white"
+                                android:layout_marginEnd="3dp" />
+
+                            <Button
+                                android:id="@+id/drawer_btn_clear_first_frame"
+                                android:layout_width="0dp"
+                                android:layout_height="26dp"
+                                android:layout_weight="1"
+                                android:text="清除"
+                                android:textSize="9sp"
+                                android:backgroundTint="#9E9E9E"
+                                android:textColor="@android:color/white" />
+                        </LinearLayout>
+                    </LinearLayout>
                 </LinearLayout>
 
+                <!-- 尾帧 -->
                 <TextView
-                    android:id="@+id/drawer_tv_key_stats"
-                    android:layout_width="match_parent"
+                    android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="0/0"
+                    android:text="尾帧图片（可选）"
                     android:textSize="10sp"
-                    android:textColor="#4CAF50"
-                    android:layout_marginBottom="8dp" />
+                    android:textColor="#999999"
+                    android:layout_marginBottom="2dp" />
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:layout_marginBottom="2dp">
+
+                    <ImageView
+                        android:id="@+id/drawer_iv_last_frame"
+                        android:layout_width="48dp"
+                        android:layout_height="48dp"
+                        android:scaleType="centerCrop"
+                        android:background="@drawable/edit_bg"
+                        android:layout_marginEnd="6dp" />
+
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:orientation="vertical">
+
+                        <TextView
+                            android:id="@+id/drawer_tv_last_frame_name"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:text="未选择"
+                            android:textSize="10sp"
+                            android:textColor="#AAAAAA"
+                            android:singleLine="true"
+                            android:ellipsize="start" />
+
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:orientation="horizontal">
+
+                            <Button
+                                android:id="@+id/drawer_btn_pick_last_frame"
+                                android:layout_width="0dp"
+                                android:layout_height="26dp"
+                                android:layout_weight="1"
+                                android:text="选择"
+                                android:textSize="9sp"
+                                android:backgroundTint="#2196F3"
+                                android:textColor="@android:color/white"
+                                android:layout_marginEnd="3dp" />
+
+                            <Button
+                                android:id="@+id/drawer_btn_clear_last_frame"
+                                android:layout_width="0dp"
+                                android:layout_height="26dp"
+                                android:layout_weight="1"
+                                android:text="清除"
+                                android:textSize="9sp"
+                                android:backgroundTint="#9E9E9E"
+                                android:textColor="@android:color/white" />
+                        </LinearLayout>
+                    </LinearLayout>
+                </LinearLayout>
 
                 <View
                     android:layout_width="match_parent"
                     android:layout_height="1dp"
-                    android:background="#E0E0E0"
+                    android:background="#F0F0F0"
                     android:layout_marginBottom="8dp" />
 
-                <!-- 剧本模型配置 -->
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="📝 剧本生成模型"
-                    android:textSize="13sp"
-                    android:textStyle="bold"
-                    android:textColor="#E91E63"
-                    android:layout_marginBottom="4dp" />
-
-                <Spinner
-                    android:id="@+id/drawer_sp_text_model"
+                <!-- ========== 高级提示词 ========== -->
+                <LinearLayout
                     android:layout_width="match_parent"
-                    android:layout_height="36dp"
-                    android:background="@drawable/spinner_bg"
-                    android:layout_marginBottom="8dp" />
-
-                <!-- 分镜模型配置 -->
-                <TextView
-                    android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="🎬 分镜生成模型"
-                    android:textSize="13sp"
-                    android:textStyle="bold"
-                    android:textColor="#9C27B0"
-                    android:layout_marginBottom="4dp" />
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:layout_marginBottom="6dp">
 
-                <Spinner
-                    android:id="@+id/drawer_sp_storyboard_model"
-                    android:layout_width="match_parent"
-                    android:layout_height="36dp"
-                    android:background="@drawable/spinner_bg"
-                    android:layout_marginBottom="8dp" />
+                    <View
+                        android:layout_width="4dp"
+                        android:layout_height="16dp"
+                        android:background="#FF9800"
+                        android:layout_marginEnd="6dp" />
 
-                <!-- 图片模型配置 -->
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="🖼 文生图模型"
-                    android:textSize="13sp"
-                    android:textStyle="bold"
-                    android:textColor="#2196F3"
-                    android:layout_marginBottom="4dp" />
-
-                <Spinner
-                    android:id="@+id/drawer_sp_image_model"
-                    android:layout_width="match_parent"
-                    android:layout_height="36dp"
-                    android:background="@drawable/spinner_bg"
-                    android:layout_marginBottom="8dp" />
-
-                <!-- 视频模型配置 -->
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="🎬 图生视频模型"
-                    android:textSize="13sp"
-                    android:textStyle="bold"
-                    android:textColor="#FF5722"
-                    android:layout_marginBottom="4dp" />
-
-                <Spinner
-                    android:id="@+id/drawer_sp_video_model"
-                    android:layout_width="match_parent"
-                    android:layout_height="36dp"
-                    android:background="@drawable/spinner_bg"
-                    android:layout_marginBottom="12dp" />
-
-                <View
-                    android:layout_width="match_parent"
-                    android:layout_height="1dp"
-                    android:background="#E0E0E0"
-                    android:layout_marginBottom="8dp" />
-
-                <!-- 高级提示词 -->
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="💡 高级提示词"
-                    android:textSize="13sp"
-                    android:textStyle="bold"
-                    android:textColor="#FF9800"
-                    android:layout_marginBottom="4dp" />
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="高级提示词"
+                        android:textSize="14sp"
+                        android:textStyle="bold"
+                        android:textColor="#FF9800" />
+                </LinearLayout>
 
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="剧本系统提示词"
-                    android:textSize="11sp"
-                    android:textColor="#888888"
+                    android:textSize="10sp"
+                    android:textColor="#999999"
                     android:layout_marginBottom="2dp" />
 
                 <EditText
                     android:id="@+id/drawer_et_script_prompt"
                     android:layout_width="match_parent"
-                    android:layout_height="60dp"
+                    android:layout_height="56dp"
                     android:textSize="11sp"
-                    android:padding="6dp"
+                    android:padding="5dp"
                     android:background="@drawable/edit_bg"
                     android:gravity="top|start"
                     android:inputType="textMultiLine"
-                    android:layout_marginBottom="6dp" />
+                    android:layout_marginBottom="4dp" />
 
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="分镜系统提示词"
-                    android:textSize="11sp"
-                    android:textColor="#888888"
+                    android:textSize="10sp"
+                    android:textColor="#999999"
                     android:layout_marginBottom="2dp" />
 
                 <EditText
                     android:id="@+id/drawer_et_shots_prompt"
                     android:layout_width="match_parent"
-                    android:layout_height="60dp"
+                    android:layout_height="56dp"
                     android:textSize="11sp"
-                    android:padding="6dp"
+                    android:padding="5dp"
                     android:background="@drawable/edit_bg"
                     android:gravity="top|start"
                     android:inputType="textMultiLine"
-                    android:layout_marginBottom="6dp" />
+                    android:layout_marginBottom="4dp" />
 
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="负面提示词（视频/图片不想要的内容）"
+                    android:textSize="10sp"
+                    android:textColor="#999999"
+                    android:layout_marginBottom="2dp" />
+
+                <EditText
+                    android:id="@+id/drawer_et_negative_prompt"
+                    android:layout_width="match_parent"
+                    android:layout_height="50dp"
+                    android:hint="如：模糊, 变形, 水印, 文字"
+                    android:textSize="11sp"
+                    android:padding="5dp"
+                    android:background="@drawable/edit_bg"
+                    android:gravity="top|start"
+                    android:inputType="textMultiLine"
+                    android:layout_marginBottom="12dp" />
+
+                <!-- 保存按钮 -->
                 <Button
                     android:id="@+id/drawer_btn_save_config"
                     android:layout_width="match_parent"

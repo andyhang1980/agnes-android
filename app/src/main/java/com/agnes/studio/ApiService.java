@@ -23,10 +23,19 @@ import okhttp3.Response;
 public class ApiService {
     private static final String TAG = "ApiService";
     private static final String PREFS_NAME = "agnes_prefs";
+
+    // 通用配置 key
     private static final String KEY_API_KEY = "api_key";
     private static final String KEY_API_KEYS_LIST = "api_keys_list";
     private static final String KEY_BASE_URL = "base_url";
     private static final String KEY_API_KEY_INDEX = "api_key_index";
+
+    // 各 section 配置 key 前缀: text_, image_, video_
+    private static final String KEY_PREFIX_URL = "_url";
+    private static final String KEY_PREFIX_CUSTOM_URL = "_custom_url";
+    private static final String KEY_PREFIX_KEY = "_key";
+    private static final String KEY_PREFIX_MODEL = "_model";
+    private static final String KEY_PREFIX_CUSTOM_MODEL = "_custom_model";
 
     // 内置 Agnes AI 地址
     public static final String URL_CN = "https://api.agnes-ai.cn/v1";
@@ -111,6 +120,70 @@ public class ApiService {
 
     public void setBaseUrl(String baseUrl) {
         prefs.edit().putString(KEY_BASE_URL, baseUrl).apply();
+    }
+
+    // ==================== 各 Section 配置 ====================
+
+    public void setSectionUrl(String section, String url) {
+        prefs.edit().putString(section + KEY_PREFIX_URL, url).apply();
+    }
+
+    public String getSectionUrl(String section) {
+        return prefs.getString(section + KEY_PREFIX_URL, URL_CN);
+    }
+
+    public void setSectionCustomUrl(String section, String url) {
+        prefs.edit().putString(section + KEY_PREFIX_CUSTOM_URL, url).apply();
+    }
+
+    public String getSectionCustomUrl(String section) {
+        return prefs.getString(section + KEY_PREFIX_CUSTOM_URL, "");
+    }
+
+    public void setSectionKey(String section, String key) {
+        prefs.edit().putString(section + KEY_PREFIX_KEY, key).apply();
+    }
+
+    public String getSectionKey(String section) {
+        return prefs.getString(section + KEY_PREFIX_KEY, "");
+    }
+
+    public void setSectionModel(String section, String model) {
+        prefs.edit().putString(section + KEY_PREFIX_MODEL, model).apply();
+    }
+
+    public String getSectionModel(String section) {
+        return prefs.getString(section + KEY_PREFIX_MODEL, "");
+    }
+
+    public void setSectionCustomModel(String section, String model) {
+        prefs.edit().putString(section + KEY_PREFIX_CUSTOM_MODEL, model).apply();
+    }
+
+    public String getSectionCustomModel(String section) {
+        return prefs.getString(section + KEY_PREFIX_CUSTOM_MODEL, "");
+    }
+
+    /**
+     * 获取 section 最终使用的 URL
+     */
+    public String getSectionBaseUrl(String section) {
+        String urlName = getSectionUrl(section);
+        if ("custom".equals(urlName)) {
+            return getSectionCustomUrl(section);
+        }
+        return urlName;
+    }
+
+    /**
+     * 获取 section 最终使用的 model
+     */
+    public String getSectionModelName(String section, String[][] models) {
+        String modelId = getSectionModel(section);
+        if ("custom".equals(modelId)) {
+            return getSectionCustomModel(section);
+        }
+        return modelId;
     }
 
     // ==================== 多 Key 轮询 ====================
@@ -209,11 +282,10 @@ public class ApiService {
         return current + "/" + total;
     }
 
-    // ==================== API 调用（自动轮询 Key） ====================
+    // ==================== API 调用（section 独立配置） ====================
 
-    public String chatCompletion(String model, String prompt, String systemPrompt) throws IOException {
-        String apiKey = getNextApiKey();
-        if (apiKey.isEmpty()) {
+    public String chatCompletion(String baseUrl, String apiKey, String model, String prompt, String systemPrompt) throws IOException {
+        if (apiKey == null || apiKey.isEmpty()) {
             throw new IOException("请先配置 API Key");
         }
 
@@ -239,7 +311,7 @@ public class ApiService {
         }
 
         Request request = new Request.Builder()
-                .url(getBaseUrl() + "/chat/completions")
+                .url(baseUrl + "/chat/completions")
                 .addHeader("Authorization", "Bearer " + apiKey)
                 .post(RequestBody.create(body.toString(), JSON))
                 .build();
@@ -258,9 +330,8 @@ public class ApiService {
         }
     }
 
-    public String generateImage(String model, String prompt, String imageUrl) throws IOException {
-        String apiKey = getNextApiKey();
-        if (apiKey.isEmpty()) {
+    public String generateImage(String baseUrl, String apiKey, String model, String prompt) throws IOException {
+        if (apiKey == null || apiKey.isEmpty()) {
             throw new IOException("请先配置 API Key");
         }
 
@@ -277,7 +348,7 @@ public class ApiService {
         }
 
         Request request = new Request.Builder()
-                .url(getBaseUrl() + "/images/generations")
+                .url(baseUrl + "/images/generations")
                 .addHeader("Authorization", "Bearer " + apiKey)
                 .post(RequestBody.create(body.toString(), JSON))
                 .build();
@@ -295,9 +366,9 @@ public class ApiService {
         }
     }
 
-    public String generateVideo(String model, String prompt, String imageUrl) throws IOException {
-        String apiKey = getNextApiKey();
-        if (apiKey.isEmpty()) {
+    public String generateVideo(String baseUrl, String apiKey, String model, String prompt,
+                                  String firstFrameUrl, String lastFrameUrl, String negativePrompt) throws IOException {
+        if (apiKey == null || apiKey.isEmpty()) {
             throw new IOException("请先配置 API Key");
         }
 
@@ -306,15 +377,30 @@ public class ApiService {
             body.put("model", model);
             body.put("prompt", prompt);
             body.put("seconds", "5");
-            body.put("mode", "text");
             body.put("size", "720P");
             body.put("aspect_ratio", "16:9");
+
+            boolean hasFirst = firstFrameUrl != null && !firstFrameUrl.isEmpty();
+            boolean hasLast = lastFrameUrl != null && !lastFrameUrl.isEmpty();
+
+            if (hasFirst || hasLast) {
+                // keyframe 模式
+                body.put("mode", "keyframe");
+                if (hasFirst) body.put("first_frame", firstFrameUrl);
+                if (hasLast) body.put("last_frame", lastFrameUrl);
+            } else {
+                body.put("mode", "text");
+            }
+
+            if (negativePrompt != null && !negativePrompt.isEmpty()) {
+                body.put("negative_prompt", negativePrompt);
+            }
         } catch (JSONException e) {
             throw new IOException("JSON error", e);
         }
 
         Request request = new Request.Builder()
-                .url(getBaseUrl() + "/videos")
+                .url(baseUrl + "/videos")
                 .addHeader("Authorization", "Bearer " + apiKey)
                 .post(RequestBody.create(body.toString(), JSON))
                 .build();
@@ -331,9 +417,9 @@ public class ApiService {
     }
 
     public JSONObject getVideoStatus(String videoId, String model) throws IOException {
-        String apiKey = getNextApiKey();
+        String apiKey = getSectionKey("video");
+        String baseUrl = getSectionBaseUrl("video");
 
-        String baseUrl = getBaseUrl();
         String pollingUrl;
         if (baseUrl.contains("api.agnes-ai.cn")) {
             pollingUrl = "https://api.agnes-ai.cn/agnesapi?video_id=" + videoId + "&model_name=" + model;
@@ -371,5 +457,16 @@ public class ApiService {
             }
             return response.body().bytes();
         }
+    }
+
+    /**
+     * 将本地图片转为 base64 Data URI，供 keyframe 使用
+     */
+    public String fileToDataUri(File file) throws IOException {
+        byte[] bytes = java.nio.file.Files.readAllBytes(file.toPath());
+        String ext = file.getName().substring(file.getName().lastIndexOf('.') + 1).toLowerCase();
+        String mime = "png".equals(ext) ? "image/png" : "image/jpeg";
+        String base64 = android.util.Base64.encodeToString(bytes, android.util.Base64.NO_WRAP);
+        return "data:" + mime + ";base64," + base64;
     }
 }
