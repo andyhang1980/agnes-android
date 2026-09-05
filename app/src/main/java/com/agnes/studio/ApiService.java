@@ -72,6 +72,8 @@ public class ApiService {
         {"qwen-video-gen", "通义千问 Video"},
     };
 
+    private static final MediaType JSON = MediaType.get("application/json; charset=utf-8");
+
     private final OkHttpClient client;
     private final SharedPreferences prefs;
 
