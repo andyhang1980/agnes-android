@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+    <group android:checkableBehavior="single">
+        <item
+            android:id="@+id/nav_global_config"
+            android:title="🔑 全局配置" />
+        <item
+            android:id="@+id/nav_script_config"
+            android:title="📝 剧本模型" />
+        <item
+            android:id="@+id/nav_storyboard_config"
+            android:title="🎬 分镜模型" />
+        <item
+            android:id="@+id/nav_image_config"
+            android:title="🖼 文生图模型" />
+        <item
+            android:id="@+id/nav_video_config"
+            android:title="📹 图生视频模型" />
+        <item
+            android:id="@+id/nav_prompts"
+            android:title="💡 高级提示词" />
+    </group>
+</menu>
