@@ -60,8 +60,8 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
 
     // Agnes 默认模型
     private static final String AGNES_TEXT = "agnes-2.5-flash";
-    private static final String AGNES_IMAGE = "agnes-image-2.1-flash";
-    private static final String AGNES_VIDEO = "agnes-video-v2.0";
+    private static final String AGNES_IMAGE = "agnes-image-2.5-flash";
+    private static final String AGNES_VIDEO = "agnes-video-2.5-flash";
 
     // 当前状态
     private String lastScript;
@@ -508,7 +508,7 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
 
                 for (int i = 0; i < 120; i++) {
                     Thread.sleep(5000);
-                    org.json.JSONObject status = api.getVideoStatus(taskId);
+                    org.json.JSONObject status = api.getVideoStatus(taskId, getVideoModel());
                     String state = status.optString("status", "");
 
                     if ("completed".equals(state) || "success".equals(state)) {
@@ -606,7 +606,7 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
                 String videoPath = null;
                 for (int i = 0; i < 120; i++) {
                     Thread.sleep(5000);
-                    org.json.JSONObject status = api.getVideoStatus(taskId);
+                    org.json.JSONObject status = api.getVideoStatus(taskId, videoModel);
                     String state = status.optString("status", "");
                     if ("completed".equals(state) || "success".equals(state)) {
                         String videoUrl = status.optString("video_url", "");

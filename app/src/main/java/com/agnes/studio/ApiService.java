@@ -63,7 +63,8 @@ public class ApiService {
     };
 
     public static final String[][] IMAGE_MODELS = {
-        {"agnes-image-2.1-flash", "Agnes Image 2.1 (推荐)"},
+        {"agnes-image-2.5-flash", "Agnes Image 2.5 (推荐)"},
+        {"agnes-image-2.1-flash", "Agnes Image 2.1"},
         {"agnes-image-2.0-flash", "Agnes Image 2.0"},
         {"doubao-seedream-3-0", "豆包 Seedream 3.0"},
         {"minimax-image-01", "MiniMax Image 01"},
@@ -71,7 +72,8 @@ public class ApiService {
     };
 
     public static final String[][] VIDEO_MODELS = {
-        {"agnes-video-v2.0", "Agnes Video 2.0 (推荐)"},
+        {"agnes-video-2.5-flash", "Agnes Video 2.5 (推荐)"},
+        {"agnes-video-v2.0", "Agnes Video 2.0"},
         {"minimax-video-01", "MiniMax Video 01"},
         {"doubao-seaweed-t2v", "豆包 Seaweed"},
         {"qwen-video-gen", "通义千问 Video"},
@@ -230,8 +232,8 @@ public class ApiService {
             userMsg.put("content", prompt);
             messages.put(userMsg);
             body.put("messages", messages);
-            body.put("temperature", 0.7);
-            body.put("max_tokens", 4096);
+            body.put("temperature", 0.6);
+            body.put("max_tokens", 1024);
         } catch (JSONException e) {
             throw new IOException("JSON error", e);
         }
@@ -266,11 +268,10 @@ public class ApiService {
         try {
             body.put("model", model);
             body.put("prompt", prompt);
-            if (imageUrl != null && !imageUrl.isEmpty()) {
-                body.put("image_url", imageUrl);
-            }
-            body.put("n", 1);
-            body.put("size", "1024x1024");
+            body.put("size", "1024x768");
+            JSONObject extraBody = new JSONObject();
+            extraBody.put("response_format", "url");
+            body.put("extra_body", extraBody);
         } catch (JSONException e) {
             throw new IOException("JSON error", e);
         }
@@ -304,17 +305,16 @@ public class ApiService {
         try {
             body.put("model", model);
             body.put("prompt", prompt);
-            if (imageUrl != null && !imageUrl.isEmpty()) {
-                body.put("image_url", imageUrl);
-            }
-            body.put("num_frames", 121);
-            body.put("frame_rate", 24);
+            body.put("seconds", "5");
+            body.put("mode", "text");
+            body.put("size", "720P");
+            body.put("aspect_ratio", "16:9");
         } catch (JSONException e) {
             throw new IOException("JSON error", e);
         }
 
         Request request = new Request.Builder()
-                .url(getBaseUrl() + "/video/generations")
+                .url(getBaseUrl() + "/videos")
                 .addHeader("Authorization", "Bearer " + apiKey)
                 .post(RequestBody.create(body.toString(), JSON))
                 .build();
@@ -324,17 +324,27 @@ public class ApiService {
                 throw new IOException("API错误: " + response.code() + "\n" + response.body().string());
             }
             JSONObject resp = new JSONObject(response.body().string());
-            return resp.getString("task_id");
+            return resp.getString("video_id");
         } catch (JSONException e) {
             throw new IOException("响应解析失败", e);
         }
     }
 
-    public JSONObject getVideoStatus(String taskId) throws IOException {
+    public JSONObject getVideoStatus(String videoId, String model) throws IOException {
         String apiKey = getNextApiKey();
 
+        String baseUrl = getBaseUrl();
+        String pollingUrl;
+        if (baseUrl.contains("api.agnes-ai.cn")) {
+            pollingUrl = "https://api.agnes-ai.cn/agnesapi?video_id=" + videoId + "&model_name=" + model;
+        } else if (baseUrl.contains("apihub.agnes-ai.com")) {
+            pollingUrl = "https://apihub.agnes-ai.com/agnesapi?video_id=" + videoId + "&model_name=" + model;
+        } else {
+            pollingUrl = baseUrl.replace("/v1", "") + "/agnesapi?video_id=" + videoId + "&model_name=" + model;
+        }
+
         Request request = new Request.Builder()
-                .url(getBaseUrl() + "/video/generations/" + taskId)
+                .url(pollingUrl)
                 .addHeader("Authorization", "Bearer " + apiKey)
                 .get()
                 .build();
