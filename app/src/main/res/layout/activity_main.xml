@@ -16,70 +16,63 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:text="Agnes AI Studio"
-            android:textSize="24sp"
+            android:textSize="22sp"
             android:textStyle="bold"
             android:textColor="#333333"
             android:gravity="center"
-            android:layout_marginBottom="8dp" />
+            android:layout_marginBottom="4dp" />
 
         <TextView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="AI 图片 &amp; 视频生成工具"
-            android:textSize="14sp"
+            android:text="短剧制作工作流"
+            android:textSize="13sp"
             android:textColor="#888888"
             android:gravity="center"
-            android:layout_marginBottom="16dp" />
+            android:layout_marginBottom="12dp" />
 
-        <!-- API 配置区 -->
+        <!-- ==================== 全局 API 配置 ==================== -->
         <androidx.cardview.widget.CardView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            app:cardCornerRadius="12dp"
+            app:cardCornerRadius="10dp"
             app:cardElevation="2dp"
-            android:layout_marginBottom="12dp">
+            android:layout_marginBottom="10dp">
 
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
-                android:padding="16dp">
+                android:padding="14dp">
 
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="🔑 API 配置"
-                    android:textSize="16sp"
+                    android:text="🔑 全局 API 配置"
+                    android:textSize="15sp"
                     android:textStyle="bold"
                     android:textColor="#333333"
                     android:layout_marginBottom="8dp" />
 
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="API 地址"
-                    android:textSize="13sp"
-                    android:textColor="#666666"
-                    android:layout_marginBottom="4dp" />
-
                 <Spinner
                     android:id="@+id/sp_url"
                     android:layout_width="match_parent"
-                    android:layout_height="44dp"
+                    android:layout_height="40dp"
                     android:background="@drawable/spinner_bg"
-                    android:layout_marginBottom="8dp" />
+                    android:layout_marginBottom="6dp" />
 
                 <EditText
                     android:id="@+id/et_custom_url"
                     android:layout_width="match_parent"
-                    android:layout_height="44dp"
-                    android:hint="输入自定义 API 地址"
-                    android:textSize="14sp"
+                    android:layout_height="38dp"
+                    android:hint="自定义 API 地址"
+                    android:textSize="13sp"
                     android:padding="8dp"
                     android:background="@drawable/edit_bg"
-                    android:layout_marginBottom="8dp"
+                    android:layout_marginBottom="6dp"
                     android:visibility="gone" />
 
+                <!-- 多 Key 轮询 -->
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
@@ -91,8 +84,8 @@
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
-                        android:text="API Key (多 Key 轮询)"
-                        android:textSize="13sp"
+                        android:text="API Key (支持多 Key 轮询)"
+                        android:textSize="12sp"
                         android:textColor="#666666" />
 
                     <TextView
@@ -100,7 +93,7 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="0/0"
-                        android:textSize="12sp"
+                        android:textSize="11sp"
                         android:textColor="#4CAF50"
                         android:textStyle="bold" />
                 </LinearLayout>
@@ -108,9 +101,9 @@
                 <EditText
                     android:id="@+id/et_api_key"
                     android:layout_width="match_parent"
-                    android:layout_height="40dp"
-                    android:hint="输入 API Key，点击添加"
-                    android:textSize="13sp"
+                    android:layout_height="36dp"
+                    android:hint="输入 Key，点击添加"
+                    android:textSize="12sp"
                     android:padding="8dp"
                     android:background="@drawable/edit_bg"
                     android:inputType="textPassword"
@@ -126,10 +119,10 @@
                     <Button
                         android:id="@+id/btn_add_key"
                         android:layout_width="0dp"
-                        android:layout_height="36dp"
+                        android:layout_height="32dp"
                         android:layout_weight="1"
                         android:text="+ 添加"
-                        android:textSize="12sp"
+                        android:textSize="11sp"
                         android:backgroundTint="#2196F3"
                         android:textColor="@android:color/white"
                         android:layout_marginEnd="4dp" />
@@ -137,10 +130,10 @@
                     <Button
                         android:id="@+id/btn_remove_key"
                         android:layout_width="0dp"
-                        android:layout_height="36dp"
+                        android:layout_height="32dp"
                         android:layout_weight="1"
                         android:text="- 删除当前"
-                        android:textSize="12sp"
+                        android:textSize="11sp"
                         android:backgroundTint="#F44336"
                         android:textColor="@android:color/white"
                         android:layout_marginStart="4dp" />
@@ -151,43 +144,36 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:text="暂无 Key"
-                    android:textSize="11sp"
+                    android:textSize="10sp"
                     android:textColor="#999999"
-                    android:lineSpacingExtra="2dp"
-                    android:layout_marginBottom="8dp"
-                    android:maxLines="5"
+                    android:layout_marginBottom="4dp"
+                    android:maxLines="3"
                     android:ellipsize="end" />
 
-                <Button
-                    android:id="@+id/btn_save_config"
-                    android:layout_width="match_parent"
-                    android:layout_height="40dp"
-                    android:text="保存配置"
-                    android:textSize="14sp"
-                    android:backgroundTint="#4CAF50"
-                    android:textColor="@android:color/white" />
             </LinearLayout>
         </androidx.cardview.widget.CardView>
 
-        <!-- 模型选择区 -->
+        <!-- ==================== 工作流模型配置 ==================== -->
         <androidx.cardview.widget.CardView
+            android:id="@+id/card_models"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            app:cardCornerRadius="12dp"
+            app:cardCornerRadius="10dp"
             app:cardElevation="2dp"
-            android:layout_marginBottom="12dp">
+            android:layout_marginBottom="10dp"
+            android:visibility="gone">
 
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
-                android:padding="16dp">
+                android:padding="14dp">
 
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="🤖 模型选择"
-                    android:textSize="16sp"
+                    android:text="🤖 工作流模型 (非 Agnes 时可自定义)"
+                    android:textSize="15sp"
                     android:textStyle="bold"
                     android:textColor="#333333"
                     android:layout_marginBottom="8dp" />
@@ -195,240 +181,339 @@
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="文本模型（剧本/分镜）"
-                    android:textSize="13sp"
-                    android:textColor="#666666"
-                    android:layout_marginBottom="4dp" />
+                    android:text="文本模型 (剧本/分镜)"
+                    android:textSize="11sp"
+                    android:textColor="#888888"
+                    android:layout_marginBottom="2dp" />
 
                 <Spinner
                     android:id="@+id/sp_text_model"
                     android:layout_width="match_parent"
-                    android:layout_height="44dp"
+                    android:layout_height="36dp"
                     android:background="@drawable/spinner_bg"
-                    android:layout_marginBottom="8dp" />
+                    android:layout_marginBottom="6dp" />
 
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="图片模型"
-                    android:textSize="13sp"
-                    android:textColor="#666666"
-                    android:layout_marginBottom="4dp" />
+                    android:text="图片模型 (文生图)"
+                    android:textSize="11sp"
+                    android:textColor="#888888"
+                    android:layout_marginBottom="2dp" />
 
                 <Spinner
                     android:id="@+id/sp_image_model"
                     android:layout_width="match_parent"
-                    android:layout_height="44dp"
+                    android:layout_height="36dp"
                     android:background="@drawable/spinner_bg"
-                    android:layout_marginBottom="8dp" />
+                    android:layout_marginBottom="6dp" />
 
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="视频模型"
-                    android:textSize="13sp"
-                    android:textColor="#666666"
-                    android:layout_marginBottom="4dp" />
+                    android:text="视频模型 (图生视频)"
+                    android:textSize="11sp"
+                    android:textColor="#888888"
+                    android:layout_marginBottom="2dp" />
 
                 <Spinner
                     android:id="@+id/sp_video_model"
                     android:layout_width="match_parent"
-                    android:layout_height="44dp"
+                    android:layout_height="36dp"
                     android:background="@drawable/spinner_bg" />
+
             </LinearLayout>
         </androidx.cardview.widget.CardView>
 
-        <!-- 输入区 -->
+        <!-- ==================== 内容输入 ==================== -->
         <androidx.cardview.widget.CardView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            app:cardCornerRadius="12dp"
+            app:cardCornerRadius="10dp"
             app:cardElevation="2dp"
-            android:layout_marginBottom="12dp">
+            android:layout_marginBottom="10dp">
 
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
-                android:padding="16dp">
+                android:padding="14dp">
 
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="✏️ 内容输入"
-                    android:textSize="16sp"
+                    android:text="✏️ 输入短剧主题"
+                    android:textSize="15sp"
                     android:textStyle="bold"
                     android:textColor="#333333"
-                    android:layout_marginBottom="8dp" />
+                    android:layout_marginBottom="6dp" />
 
                 <EditText
                     android:id="@+id/et_input"
                     android:layout_width="match_parent"
-                    android:layout_height="100dp"
-                    android:hint="输入主题、提示词或剧本内容...\n\n例如：都市爱情，男女主角在咖啡馆相遇"
-                    android:textSize="14sp"
-                    android:padding="12dp"
+                    android:layout_height="80dp"
+                    android:hint="例如：都市爱情，男女主角在咖啡馆相遇..."
+                    android:textSize="13sp"
+                    android:padding="10dp"
                     android:background="@drawable/edit_bg"
                     android:gravity="top|start"
                     android:inputType="textMultiLine"
-                    android:layout_marginBottom="8dp" />
+                    android:layout_marginBottom="6dp" />
 
                 <Button
                     android:id="@+id/btn_preset1"
                     android:layout_width="match_parent"
-                    android:layout_height="36dp"
-                    android:text="📋 选择预设主题"
-                    android:textSize="13sp"
+                    android:layout_height="32dp"
+                    android:text="📋 预设主题"
+                    android:textSize="12sp"
                     android:backgroundTint="#FF9800"
                     android:textColor="@android:color/white" />
+
             </LinearLayout>
         </androidx.cardview.widget.CardView>
 
-        <!-- 功能按钮区 -->
+        <!-- ==================== 工作流按钮 ==================== -->
         <androidx.cardview.widget.CardView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            app:cardCornerRadius="12dp"
+            app:cardCornerRadius="10dp"
             app:cardElevation="2dp"
-            android:layout_marginBottom="12dp">
+            android:layout_marginBottom="10dp">
 
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
-                android:padding="16dp">
+                android:padding="14dp">
 
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="🎬 功能"
-                    android:textSize="16sp"
+                    android:text="🎬 工作流"
+                    android:textSize="15sp"
                     android:textStyle="bold"
                     android:textColor="#333333"
-                    android:layout_marginBottom="12dp" />
+                    android:layout_marginBottom="8dp" />
 
+                <!-- 第一步：剧本 -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:layout_marginBottom="4dp">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="① "
+                        android:textSize="13sp"
+                        android:textColor="#E91E63"
+                        android:textStyle="bold" />
+
+                    <Button
+                        android:id="@+id/btn_gen_script"
+                        android:layout_width="0dp"
+                        android:layout_height="38dp"
+                        android:layout_weight="1"
+                        android:text="生成剧本"
+                        android:textSize="13sp"
+                        android:backgroundTint="#E91E63"
+                        android:textColor="@android:color/white" />
+                </LinearLayout>
+
+                <!-- 第二步：分镜 -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:layout_marginBottom="4dp">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="② "
+                        android:textSize="13sp"
+                        android:textColor="#9C27B0"
+                        android:textStyle="bold" />
+
+                    <Button
+                        android:id="@+id/btn_gen_shots"
+                        android:layout_width="0dp"
+                        android:layout_height="38dp"
+                        android:layout_weight="1"
+                        android:text="生成分镜"
+                        android:textSize="13sp"
+                        android:backgroundTint="#9C27B0"
+                        android:textColor="@android:color/white" />
+                </LinearLayout>
+
+                <!-- 第三步：文生图 -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:layout_marginBottom="4dp">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="③ "
+                        android:textSize="13sp"
+                        android:textColor="#2196F3"
+                        android:textStyle="bold" />
+
+                    <Button
+                        android:id="@+id/btn_gen_image"
+                        android:layout_width="0dp"
+                        android:layout_height="38dp"
+                        android:layout_weight="1"
+                        android:text="文生图"
+                        android:textSize="13sp"
+                        android:backgroundTint="#2196F3"
+                        android:textColor="@android:color/white" />
+                </LinearLayout>
+
+                <!-- 第四步：图生视频 -->
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:orientation="horizontal"
                     android:layout_marginBottom="8dp">
 
-                    <Button
-                        android:id="@+id/btn_gen_script"
-                        android:layout_width="0dp"
-                        android:layout_height="44dp"
-                        android:layout_weight="1"
-                        android:text="生成剧本"
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="④ "
                         android:textSize="13sp"
-                        android:backgroundTint="#2196F3"
-                        android:textColor="@android:color/white"
-                        android:layout_marginEnd="4dp" />
-
-                    <Button
-                        android:id="@+id/btn_gen_image"
-                        android:layout_width="0dp"
-                        android:layout_height="44dp"
-                        android:layout_weight="1"
-                        android:text="生成图片"
-                        android:textSize="13sp"
-                        android:backgroundTint="#9C27B0"
-                        android:textColor="@android:color/white"
-                        android:layout_marginStart="4dp"
-                        android:layout_marginEnd="4dp" />
+                        android:textColor="#FF5722"
+                        android:textStyle="bold" />
 
                     <Button
                         android:id="@+id/btn_gen_video"
                         android:layout_width="0dp"
-                        android:layout_height="44dp"
+                        android:layout_height="38dp"
                         android:layout_weight="1"
-                        android:text="生成视频"
+                        android:text="图生视频"
                         android:textSize="13sp"
-                        android:backgroundTint="#F44336"
-                        android:textColor="@android:color/white"
-                        android:layout_marginStart="4dp" />
+                        android:backgroundTint="#FF5722"
+                        android:textColor="@android:color/white" />
                 </LinearLayout>
 
+                <!-- 一键全流程 -->
                 <Button
                     android:id="@+id/btn_generate"
                     android:layout_width="match_parent"
-                    android:layout_height="52dp"
-                    android:text="🚀 一键生成短剧"
-                    android:textSize="16sp"
+                    android:layout_height="46dp"
+                    android:text="🚀 一键生成短剧 (全流程)"
+                    android:textSize="15sp"
                     android:textStyle="bold"
-                    android:backgroundTint="#E91E63"
+                    android:backgroundTint="#4CAF50"
                     android:textColor="@android:color/white"
-                    android:layout_marginBottom="8dp" />
+                    android:layout_marginBottom="4dp" />
 
-                <Button
-                    android:id="@+id/btn_tasks"
-                    android:layout_width="match_parent"
-                    android:layout_height="40dp"
-                    android:text="📋 查看任务"
-                    android:textSize="13sp"
-                    android:backgroundTint="#607D8B"
-                    android:textColor="@android:color/white" />
             </LinearLayout>
         </androidx.cardview.widget.CardView>
 
-        <!-- 预览区 -->
-        <ImageView
-            android:id="@+id/iv_preview"
-            android:layout_width="match_parent"
-            android:layout_height="200dp"
-            android:scaleType="fitCenter"
-            android:background="@drawable/preview_bg"
-            android:layout_marginBottom="12dp"
-            android:visibility="gone" />
-
-        <!-- 输出区 -->
+        <!-- ==================== 生成结果展示 ==================== -->
         <androidx.cardview.widget.CardView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            app:cardCornerRadius="12dp"
+            app:cardCornerRadius="10dp"
             app:cardElevation="2dp"
-            android:layout_marginBottom="16dp">
+            android:layout_marginBottom="10dp">
 
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
-                android:padding="16dp">
+                android:padding="14dp">
 
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="📄 输出结果"
-                    android:textSize="16sp"
+                    android:text="📄 生成结果"
+                    android:textSize="15sp"
                     android:textStyle="bold"
                     android:textColor="#333333"
                     android:layout_marginBottom="8dp" />
 
+                <!-- 图片预览 -->
+                <TextView
+                    android:id="@+id/tv_image_label"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="🖼 生成图片"
+                    android:textSize="12sp"
+                    android:textColor="#888888"
+                    android:layout_marginBottom="4dp"
+                    android:visibility="gone" />
+
+                <ImageView
+                    android:id="@+id/iv_preview"
+                    android:layout_width="match_parent"
+                    android:layout_height="180dp"
+                    android:scaleType="fitCenter"
+                    android:background="@drawable/preview_bg"
+                    android:layout_marginBottom="8dp"
+                    android:visibility="gone" />
+
+                <!-- 视频预览 -->
+                <TextView
+                    android:id="@+id/tv_video_label"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="🎬 生成视频"
+                    android:textSize="12sp"
+                    android:textColor="#888888"
+                    android:layout_marginBottom="4dp"
+                    android:visibility="gone" />
+
+                <VideoView
+                    android:id="@+id/vv_preview"
+                    android:layout_width="match_parent"
+                    android:layout_height="200dp"
+                    android:background="#000000"
+                    android:layout_marginBottom="8dp"
+                    android:visibility="gone" />
+
+                <!-- 文本输出 -->
+                <TextView
+                    android:id="@+id/tv_output_label"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="📝 文本输出"
+                    android:textSize="12sp"
+                    android:textColor="#888888"
+                    android:layout_marginBottom="4dp"
+                    android:visibility="gone" />
+
                 <ScrollView
                     android:id="@+id/sv_output"
                     android:layout_width="match_parent"
-                    android:layout_height="200dp"
-                    android:visibility="gone"
+                    android:layout_height="150dp"
                     android:background="#FAFAFA"
-                    android:padding="8dp">
+                    android:padding="8dp"
+                    android:visibility="gone">
 
                     <TextView
                         android:id="@+id/tv_output"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:textSize="13sp"
+                        android:textSize="12sp"
                         android:textColor="#333333"
                         android:textIsSelectable="true"
-                        android:lineSpacingExtra="4dp" />
+                        android:lineSpacingExtra="3dp" />
                 </ScrollView>
 
                 <TextView
                     android:id="@+id/tv_empty"
                     android:layout_width="match_parent"
-                    android:layout_height="60dp"
+                    android:layout_height="50dp"
                     android:gravity="center"
                     android:text="生成的内容将显示在这里"
-                    android:textSize="13sp"
+                    android:textSize="12sp"
                     android:textColor="#AAAAAA" />
+
             </LinearLayout>
         </androidx.cardview.widget.CardView>
 

@@ -2,9 +2,7 @@ package com.agnes.studio;
 
 import android.app.AlertDialog;
 import android.app.ProgressDialog;
-import android.content.Intent;
-import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
+import android.media.MediaPlayer;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Environment;
@@ -17,21 +15,17 @@ import android.widget.ScrollView;
 import android.widget.Spinner;
 import android.widget.TextView;
 import android.widget.Toast;
+import android.widget.VideoView;
 
 import androidx.appcompat.app.AppCompatActivity;
 
-import org.json.JSONObject;
+import com.bumptech.glide.Glide;
 
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
-import java.util.Locale;
-
-import okhttp3.OkHttpClient;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -49,11 +43,26 @@ public class MainActivity extends AppCompatActivity {
     private TextView tvOutput;
     private TextView tvKeyStats;
     private TextView tvKeyList;
+    private TextView tvImageLabel;
+    private TextView tvVideoLabel;
+    private TextView tvOutputLabel;
     private ScrollView svOutput;
     private ImageView ivPreview;
+    private VideoView vvPreview;
     private Button btnGenerate;
+    private View cardModels;
 
-    // 预设提示词
+    // 当前生成的图片/视频路径
+    private String lastImagePath;
+    private String lastVideoPath;
+    private String lastScript;
+    private String lastShots;
+
+    // Agnes 默认模型
+    private static final String AGNES_TEXT_MODEL = "agnes-2.5-flash";
+    private static final String AGNES_IMAGE_MODEL = "agnes-image-2.1-flash";
+    private static final String AGNES_VIDEO_MODEL = "agnes-video-v2.0";
+
     private static final String[][] PROMPT_TEMPLATES = {
         {"都市爱情", "现代都市背景，男女主角从相识到相爱的故事"},
         {"悬疑推理", "侦探调查神秘案件，层层揭开真相"},
@@ -86,83 +95,65 @@ public class MainActivity extends AppCompatActivity {
         tvOutput = findViewById(R.id.tv_output);
         tvKeyStats = findViewById(R.id.tv_key_stats);
         tvKeyList = findViewById(R.id.tv_key_list);
+        tvImageLabel = findViewById(R.id.tv_image_label);
+        tvVideoLabel = findViewById(R.id.tv_video_label);
+        tvOutputLabel = findViewById(R.id.tv_output_label);
         svOutput = findViewById(R.id.sv_output);
         ivPreview = findViewById(R.id.iv_preview);
+        vvPreview = findViewById(R.id.vv_preview);
         btnGenerate = findViewById(R.id.btn_generate);
+        cardModels = findViewById(R.id.card_models);
 
-        // 添加 Key 按钮
-        findViewById(R.id.btn_add_key).setOnClickListener(v -> addApiKey());
-
-        // 删除 Key 按钮
-        findViewById(R.id.btn_remove_key).setOnClickListener(v -> removeApiKey());
-
-        // 设置 API 地址下拉
+        // API URL 下拉
         List<String> urlNames = new ArrayList<>();
         for (String[] item : ApiService.API_URLS) {
             urlNames.add(item[0]);
         }
-        ArrayAdapter<String> urlAdapter = new ArrayAdapter<>(this,
-                android.R.layout.simple_spinner_item, urlNames);
-        urlAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
-        spUrl.setAdapter(urlAdapter);
+        spUrl.setAdapter(new ArrayAdapter<>(this,
+                android.R.layout.simple_spinner_item, urlNames));
 
-        // 设置文本模型下拉
-        List<String> textModelNames = new ArrayList<>();
-        for (String[] item : ApiService.TEXT_MODELS) {
-            textModelNames.add(item[1]);
-        }
-        ArrayAdapter<String> textAdapter = new ArrayAdapter<>(this,
-                android.R.layout.simple_spinner_item, textModelNames);
-        textAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
-        spTextModel.setAdapter(textAdapter);
+        // 模型下拉
+        setupModelSpinner(spTextModel, ApiService.TEXT_MODELS);
+        setupModelSpinner(spImageModel, ApiService.IMAGE_MODELS);
+        setupModelSpinner(spVideoModel, ApiService.VIDEO_MODELS);
 
-        // 设置图片模型下拉
-        List<String> imageModelNames = new ArrayList<>();
-        for (String[] item : ApiService.IMAGE_MODELS) {
-            imageModelNames.add(item[1]);
-        }
-        ArrayAdapter<String> imageAdapter = new ArrayAdapter<>(this,
-                android.R.layout.simple_spinner_item, imageModelNames);
-        imageAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
-        spImageModel.setAdapter(imageAdapter);
+        // Key 管理
+        findViewById(R.id.btn_add_key).setOnClickListener(v -> addApiKey());
+        findViewById(R.id.btn_remove_key).setOnClickListener(v -> removeApiKey());
 
-        // 设置视频模型下拉
-        List<String> videoModelNames = new ArrayList<>();
-        for (String[] item : ApiService.VIDEO_MODELS) {
-            videoModelNames.add(item[1]);
-        }
-        ArrayAdapter<String> videoAdapter = new ArrayAdapter<>(this,
-                android.R.layout.simple_spinner_item, videoModelNames);
-        videoAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
-        spVideoModel.setAdapter(videoAdapter);
-
-        // 预设提示词按钮
+        // 预设主题
         findViewById(R.id.btn_preset1).setOnClickListener(v -> showPresetDialog());
 
-        // 保存配置按钮
-        findViewById(R.id.btn_save_config).setOnClickListener(v -> saveConfig());
-
-        // 生成剧本
+        // 工作流按钮
         findViewById(R.id.btn_gen_script).setOnClickListener(v -> generateScript());
-
-        // 生成图片
+        findViewById(R.id.btn_gen_shots).setOnClickListener(v -> generateShots());
         findViewById(R.id.btn_gen_image).setOnClickListener(v -> generateImage());
-
-        // 生成视频
         findViewById(R.id.btn_gen_video).setOnClickListener(v -> generateVideo());
-
-        // 一键生成短剧
         btnGenerate.setOnClickListener(v -> generateDrama());
 
-        // 查看任务
-        findViewById(R.id.btn_tasks).setOnClickListener(v -> {
-            Toast.makeText(this, "任务管理功能开发中...", Toast.LENGTH_SHORT).show();
+        // URL 选择监听
+        spUrl.setOnItemSelectedListener(new android.widget.AdapterView.OnItemSelectedListener() {
+            @Override
+            public void onItemSelected(android.widget.AdapterView<?> parent, View view, int position, long id) {
+                String url = ApiService.API_URLS[position][1];
+                etCustomUrl.setVisibility(url.isEmpty() ? View.VISIBLE : View.GONE);
+                // 非 Agnes 时显示模型配置
+                boolean isAgnes = position <= 1;
+                cardModels.setVisibility(isAgnes ? View.GONE : View.VISIBLE);
+            }
+            @Override
+            public void onNothingSelected(android.widget.AdapterView<?> parent) {}
         });
     }
 
-    private void loadConfig() {
-        etApiKey.setText(api.getApiKey());
+    private void setupModelSpinner(Spinner spinner, String[][] models) {
+        List<String> names = new ArrayList<>();
+        for (String[] m : models) names.add(m[1]);
+        spinner.setAdapter(new ArrayAdapter<>(this,
+                android.R.layout.simple_spinner_item, names));
+    }
 
+    private void loadConfig() {
         String currentUrl = api.getBaseUrl();
         for (int i = 0; i < ApiService.API_URLS.length; i++) {
             if (ApiService.API_URLS[i][1].equals(currentUrl)) {
@@ -170,49 +161,10 @@ public class MainActivity extends AppCompatActivity {
                 break;
             }
         }
-
-        spUrl.setOnItemSelectedListener(new android.widget.AdapterView.OnItemSelectedListener() {
-            @Override
-            public void onItemSelected(android.widget.AdapterView<?> parent, View view, int position, long id) {
-                String selectedUrl = ApiService.API_URLS[position][1];
-                if (selectedUrl.isEmpty()) {
-                    etCustomUrl.setVisibility(View.VISIBLE);
-                } else {
-                    etCustomUrl.setVisibility(View.GONE);
-                    api.setBaseUrl(selectedUrl);
-                }
-            }
-
-            @Override
-            public void onNothingSelected(android.widget.AdapterView<?> parent) {}
-        });
-
-        // 加载多 Key 列表
         updateKeyListDisplay();
     }
 
-    private void saveConfig() {
-        String apiKey = etApiKey.getText().toString().trim();
-        if (apiKey.isEmpty()) {
-            Toast.makeText(this, "请输入 API Key", Toast.LENGTH_SHORT).show();
-            return;
-        }
-
-        api.setApiKey(apiKey);
-
-        int urlPos = spUrl.getSelectedItemPosition();
-        String url = ApiService.API_URLS[urlPos][1];
-        if (url.isEmpty()) {
-            url = etCustomUrl.getText().toString().trim();
-        }
-        if (!url.isEmpty()) {
-            api.setBaseUrl(url);
-        }
-
-        Toast.makeText(this, "配置已保存", Toast.LENGTH_SHORT).show();
-    }
-
-    // ==================== 多 Key 管理 ====================
+    // ==================== Key 管理 ====================
 
     private void addApiKey() {
         String key = etApiKey.getText().toString().trim();
@@ -229,29 +181,26 @@ public class MainActivity extends AppCompatActivity {
     private void removeApiKey() {
         List<String> keys = api.getApiKeyList();
         if (keys.isEmpty()) {
-            Toast.makeText(this, "暂无 Key 可删除", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, "暂无 Key", Toast.LENGTH_SHORT).show();
             return;
         }
-        String currentKey = api.getCurrentApiKey();
-        api.removeApiKey(currentKey);
+        String current = api.getCurrentApiKey();
+        api.removeApiKey(current);
         updateKeyListDisplay();
-        Toast.makeText(this, "已删除: " + maskKey(currentKey), Toast.LENGTH_SHORT).show();
+        Toast.makeText(this, "已删除: " + maskKey(current), Toast.LENGTH_SHORT).show();
     }
 
     private void updateKeyListDisplay() {
         List<String> keys = api.getApiKeyList();
         tvKeyStats.setText(api.getKeyStats());
-
         if (keys.isEmpty()) {
             tvKeyList.setText("暂无 Key");
             return;
         }
-
         StringBuilder sb = new StringBuilder();
         for (int i = 0; i < keys.size(); i++) {
-            String masked = maskKey(keys.get(i));
             if (i > 0) sb.append("\n");
-            sb.append((i + 1)).append(". ").append(masked);
+            sb.append((i + 1)).append(". ").append(maskKey(keys.get(i)));
         }
         tvKeyList.setText(sb.toString());
     }
@@ -261,80 +210,152 @@ public class MainActivity extends AppCompatActivity {
         return key.substring(0, 4) + "****" + key.substring(key.length() - 4);
     }
 
-    private void showPresetDialog() {
-        List<String> presets = new ArrayList<>();
-        for (String[] p : PROMPT_TEMPLATES) {
-            presets.add(p[0] + " - " + p[1]);
-        }
+    // ==================== 配置获取 ====================
 
-        new AlertDialog.Builder(this)
-                .setTitle("选择预设主题")
-                .setItems(presets.toArray(new String[0]), (dialog, which) -> {
-                    etInput.setText(PROMPT_TEMPLATES[which][1]);
-                })
-                .show();
+    private String getBaseUrl() {
+        int pos = spUrl.getSelectedItemPosition();
+        String url = ApiService.API_URLS[pos][1];
+        if (url.isEmpty()) {
+            url = etCustomUrl.getText().toString().trim();
+        }
+        api.setBaseUrl(url);
+        return url;
+    }
+
+    private boolean isAgnesApi() {
+        int pos = spUrl.getSelectedItemPosition();
+        return pos <= 1; // 国内站或国际站
     }
 
     private String getTextModel() {
-        int pos = spTextModel.getSelectedItemPosition();
-        return ApiService.TEXT_MODELS[pos][0];
+        if (isAgnesApi()) return AGNES_TEXT_MODEL;
+        return ApiService.TEXT_MODELS[spTextModel.getSelectedItemPosition()][0];
     }
 
     private String getImageModel() {
-        int pos = spImageModel.getSelectedItemPosition();
-        return ApiService.IMAGE_MODELS[pos][0];
+        if (isAgnesApi()) return AGNES_IMAGE_MODEL;
+        return ApiService.IMAGE_MODELS[spImageModel.getSelectedItemPosition()][0];
     }
 
     private String getVideoModel() {
-        int pos = spVideoModel.getSelectedItemPosition();
-        return ApiService.VIDEO_MODELS[pos][0];
+        if (isAgnesApi()) return AGNES_VIDEO_MODEL;
+        return ApiService.VIDEO_MODELS[spVideoModel.getSelectedItemPosition()][0];
     }
+
+    private void showPresetDialog() {
+        List<String> presets = new ArrayList<>();
+        for (String[] p : PROMPT_TEMPLATES) presets.add(p[0] + " - " + p[1]);
+        new AlertDialog.Builder(this)
+                .setTitle("选择预设主题")
+                .setItems(presets.toArray(new String[0]), (d, w) ->
+                        etInput.setText(PROMPT_TEMPLATES[w][1]))
+                .show();
+    }
+
+    // ==================== 结果显示 ====================
 
     private void appendOutput(String text) {
+        tvOutputLabel.setVisibility(View.VISIBLE);
+        svOutput.setVisibility(View.VISIBLE);
         tvOutput.append(text + "\n");
         svOutput.post(() -> svOutput.fullScroll(View.FOCUS_DOWN));
+        findViewById(R.id.tv_empty).setVisibility(View.GONE);
     }
 
-    private void setPreviewImage(byte[] imageData) {
-        Bitmap bitmap = BitmapFactory.decodeByteArray(imageData, 0, imageData.length);
-        ivPreview.setImageBitmap(bitmap);
+    private void showImagePreview(byte[] data) {
+        tvImageLabel.setVisibility(View.VISIBLE);
         ivPreview.setVisibility(View.VISIBLE);
+        Glide.with(this).load(data).into(ivPreview);
+        findViewById(R.id.tv_empty).setVisibility(View.GONE);
     }
 
-    // ==================== 生成剧本 ====================
+    private void showVideoPreview(String path) {
+        tvVideoLabel.setVisibility(View.VISIBLE);
+        vvPreview.setVisibility(View.VISIBLE);
+        vvPreview.setVideoURI(Uri.fromFile(new File(path)));
+        vvPreview.setOnPreparedListener(mp -> {
+            mp.setLooping(true);
+            vvPreview.start();
+        });
+        findViewById(R.id.tv_empty).setVisibility(View.GONE);
+    }
+
+    // ==================== 工作流：① 生成剧本 ====================
 
     private void generateScript() {
         String input = etInput.getText().toString().trim();
         if (input.isEmpty()) {
-            Toast.makeText(this, "请输入主题或提示词", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, "请输入短剧主题", Toast.LENGTH_SHORT).show();
+            return;
+        }
+        if (api.getApiKeyList().isEmpty()) {
+            Toast.makeText(this, "请先配置 API Key", Toast.LENGTH_SHORT).show();
             return;
         }
 
         ProgressDialog pd = new ProgressDialog(this);
-        pd.setTitle("生成剧本");
-        pd.setMessage("正在生成...");
+        pd.setTitle("① 生成剧本");
+        pd.setMessage("正在生成剧本...");
         pd.setCancelable(false);
         pd.show();
 
         new Thread(() -> {
             try {
+                getBaseUrl();
                 String result = api.chatCompletion(getTextModel(), input,
-                        "你是专业短剧编剧。根据用户给的主题，生成一个3-5场的短剧剧本。");
+                        "你是专业短剧编剧。根据主题生成3-5场的短剧剧本，每场包含画面描述和台词。");
+                lastScript = result;
                 runOnUiThread(() -> {
                     pd.dismiss();
-                    tvOutput.setText(result);
-                    svOutput.setVisibility(View.VISIBLE);
+                    tvOutput.setText("");
+                    appendOutput("=== 剧本 ===\n\n" + result);
+                    Toast.makeText(this, "剧本生成完成", Toast.LENGTH_SHORT).show();
                 });
             } catch (IOException e) {
                 runOnUiThread(() -> {
                     pd.dismiss();
-                    Toast.makeText(this, "生成失败: " + e.getMessage(), Toast.LENGTH_LONG).show();
+                    Toast.makeText(this, "失败: " + e.getMessage(), Toast.LENGTH_LONG).show();
                 });
             }
         }).start();
     }
 
-    // ==================== 生成图片 ====================
+    // ==================== 工作流：② 生成分镜 ====================
+
+    private void generateShots() {
+        String script = lastScript;
+        if (script == null || script.isEmpty()) {
+            Toast.makeText(this, "请先生成剧本", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        ProgressDialog pd = new ProgressDialog(this);
+        pd.setTitle("② 生成分镜");
+        pd.setMessage("正在生成分镜...");
+        pd.setCancelable(false);
+        pd.show();
+
+        new Thread(() -> {
+            try {
+                getBaseUrl();
+                String result = api.chatCompletion(getTextModel(), script,
+                        "你是专业分镜师。将剧本转换为分镜列表，每个分镜包含画面描述。输出JSON格式：[{\"scene\":1,\"shot\":\"画面描述\"}]");
+                lastShots = result;
+                runOnUiThread(() -> {
+                    pd.dismiss();
+                    appendOutput("\n=== 分镜 ===\n\n" + result);
+                    Toast.makeText(this, "分镜生成完成", Toast.LENGTH_SHORT).show();
+                });
+            } catch (IOException e) {
+                runOnUiThread(() -> {
+                    pd.dismiss();
+                    Toast.makeText(this, "失败: " + e.getMessage(), Toast.LENGTH_LONG).show();
+                });
+            }
+        }).start();
+    }
+
+    // ==================== 工作流：③ 文生图 ====================
 
     private void generateImage() {
         String input = etInput.getText().toString().trim();
@@ -344,39 +365,40 @@ public class MainActivity extends AppCompatActivity {
         }
 
         ProgressDialog pd = new ProgressDialog(this);
-        pd.setTitle("生成图片");
-        pd.setMessage("正在生成...");
+        pd.setTitle("③ 文生图");
+        pd.setMessage("正在生成图片...");
         pd.setCancelable(false);
         pd.show();
 
         new Thread(() -> {
             try {
+                getBaseUrl();
                 String imageUrl = api.generateImage(getImageModel(), input, null);
                 byte[] imageData = api.downloadFile(imageUrl);
 
-                // 保存到本地
                 String filename = "agnes_" + System.currentTimeMillis() + ".png";
                 File dir = getExternalFilesDir(Environment.DIRECTORY_PICTURES);
                 File file = new File(dir, filename);
                 FileOutputStream fos = new FileOutputStream(file);
                 fos.write(imageData);
                 fos.close();
+                lastImagePath = file.getAbsolutePath();
 
                 runOnUiThread(() -> {
                     pd.dismiss();
-                    setPreviewImage(imageData);
+                    showImagePreview(imageData);
                     appendOutput("图片已保存: " + file.getAbsolutePath());
                 });
             } catch (IOException e) {
                 runOnUiThread(() -> {
                     pd.dismiss();
-                    Toast.makeText(this, "生成失败: " + e.getMessage(), Toast.LENGTH_LONG).show();
+                    Toast.makeText(this, "失败: " + e.getMessage(), Toast.LENGTH_LONG).show();
                 });
             }
         }).start();
     }
 
-    // ==================== 生成视频 ====================
+    // ==================== 工作流：④ 图生视频 ====================
 
     private void generateVideo() {
         String input = etInput.getText().toString().trim();
@@ -386,22 +408,21 @@ public class MainActivity extends AppCompatActivity {
         }
 
         ProgressDialog pd = new ProgressDialog(this);
-        pd.setTitle("生成视频");
-        pd.setMessage("正在提交任务...");
+        pd.setTitle("④ 图生视频");
+        pd.setMessage("正在提交...");
         pd.setCancelable(false);
         pd.show();
 
         new Thread(() -> {
             try {
-                String taskId = api.generateVideo(getVideoModel(), input, null);
-                appendOutput("任务已提交: " + taskId);
-                appendOutput("正在等待视频生成...");
+                getBaseUrl();
+                String taskId = api.generateVideo(getVideoModel(), input, lastImagePath);
+                appendOutput("\n视频任务已提交: " + taskId);
 
-                // 轮询状态
-                int maxAttempts = 120;
-                for (int i = 0; i < maxAttempts; i++) {
+                // 轮询等待
+                for (int i = 0; i < 120; i++) {
                     Thread.sleep(5000);
-                    JSONObject status = api.getVideoStatus(taskId);
+                    var status = api.getVideoStatus(taskId);
                     String state = status.optString("status", "");
 
                     if ("completed".equals(state) || "success".equals(state)) {
@@ -414,31 +435,31 @@ public class MainActivity extends AppCompatActivity {
                         FileOutputStream fos = new FileOutputStream(file);
                         fos.write(videoData);
                         fos.close();
+                        lastVideoPath = file.getAbsolutePath();
 
                         runOnUiThread(() -> {
                             pd.dismiss();
+                            showVideoPreview(lastVideoPath);
                             appendOutput("视频已保存: " + file.getAbsolutePath());
-                            Toast.makeText(this, "视频生成完成!", Toast.LENGTH_SHORT).show();
                         });
                         return;
                     } else if ("failed".equals(state)) {
-                        throw new IOException("视频生成失败: " + status.optString("error", ""));
+                        throw new IOException("视频生成失败");
                     }
-
-                    final int percent = (i + 1) * 5;
-                    runOnUiThread(() -> pd.setMessage("生成中... " + percent + "秒"));
+                    final int sec = (i + 1) * 5;
+                    runOnUiThread(() -> pd.setMessage("生成中... " + sec + "秒"));
                 }
-                throw new IOException("视频生成超时");
+                throw new IOException("超时");
             } catch (IOException | InterruptedException e) {
                 runOnUiThread(() -> {
                     pd.dismiss();
-                    Toast.makeText(this, "生成失败: " + e.getMessage(), Toast.LENGTH_LONG).show();
+                    Toast.makeText(this, "失败: " + e.getMessage(), Toast.LENGTH_LONG).show();
                 });
             }
         }).start();
     }
 
-    // ==================== 一键生成短剧 ====================
+    // ==================== 一键全流程 ====================
 
     private void generateDrama() {
         String input = etInput.getText().toString().trim();
@@ -446,51 +467,102 @@ public class MainActivity extends AppCompatActivity {
             Toast.makeText(this, "请输入短剧主题", Toast.LENGTH_SHORT).show();
             return;
         }
-
-        if (api.getApiKey().isEmpty()) {
+        if (api.getApiKeyList().isEmpty()) {
             Toast.makeText(this, "请先配置 API Key", Toast.LENGTH_SHORT).show();
             return;
         }
 
         btnGenerate.setEnabled(false);
         ProgressDialog pd = new ProgressDialog(this);
-        pd.setTitle("生成短剧");
-        pd.setMessage("正在生成...");
+        pd.setTitle("一键生成短剧");
+        pd.setMessage("准备中...");
         pd.setCancelable(false);
         pd.show();
 
-        dramaGen.generateDrama(input, "现代",
-                getTextModel(), getImageModel(), getVideoModel(),
-                new DramaGenerator.Callback() {
-                    @Override
-                    public void onProgress(String step, String message) {
-                        runOnUiThread(() -> {
-                            pd.setMessage(step + ": " + message);
-                            appendOutput("[" + step + "] " + message);
-                        });
-                    }
+        new Thread(() -> {
+            try {
+                getBaseUrl();
+                String textModel = getTextModel();
+                String imageModel = getImageModel();
+                String videoModel = getVideoModel();
 
-                    @Override
-                    public void onComplete(DramaGenerator.DramaResult result) {
-                        runOnUiThread(() -> {
-                            pd.dismiss();
-                            btnGenerate.setEnabled(true);
-                            tvOutput.setText("=== 短剧剧本 ===\n\n" + result.script);
-                            svOutput.setVisibility(View.VISIBLE);
-                            appendOutput("\n=== 生成完成 ===");
-                            appendOutput("共生成 " + result.videoUrls.length + " 个视频片段");
-                            Toast.makeText(MainActivity.this, "短剧生成完成!", Toast.LENGTH_SHORT).show();
-                        });
-                    }
+                // ① 生成剧本
+                pd.setMessage("① 生成剧本...");
+                String script = api.chatCompletion(textModel, input,
+                        "你是专业短剧编剧。根据主题生成3-5场的短剧剧本。");
 
-                    @Override
-                    public void onError(String error) {
-                        runOnUiThread(() -> {
-                            pd.dismiss();
-                            btnGenerate.setEnabled(true);
-                            Toast.makeText(MainActivity.this, "生成失败: " + error, Toast.LENGTH_LONG).show();
-                        });
+                // ② 生成分镜
+                pd.setMessage("② 生成分镜...");
+                String shots = api.chatCompletion(textModel, script,
+                        "将剧本转为分镜，JSON格式：[{\"scene\":1,\"shot\":\"画面描述\"}]");
+
+                // ③ 文生图
+                pd.setMessage("③ 生成封面图...");
+                String imageUrl = api.generateImage(imageModel, input, null);
+
+                // ④ 图生视频
+                pd.setMessage("④ 生成视频...");
+                String taskId = api.generateVideo(videoModel, input, null);
+
+                // 等待视频
+                String videoPath = null;
+                for (int i = 0; i < 120; i++) {
+                    Thread.sleep(5000);
+                    var status = api.getVideoStatus(taskId);
+                    String state = status.optString("status", "");
+                    if ("completed".equals(state) || "success".equals(state)) {
+                        String videoUrl = status.optString("video_url", "");
+                        byte[] videoData = api.downloadFile(videoUrl);
+                        String filename = "drama_" + System.currentTimeMillis() + ".mp4";
+                        File dir = getExternalFilesDir(Environment.DIRECTORY_MOVIES);
+                        File file = new File(dir, filename);
+                        FileOutputStream fos = new FileOutputStream(file);
+                        fos.write(videoData);
+                        fos.close();
+                        videoPath = file.getAbsolutePath();
+                        break;
+                    } else if ("failed".equals(state)) {
+                        throw new IOException("视频生成失败");
+                    }
+                    pd.setMessage("等待视频... " + ((i + 1) * 5) + "秒");
+                }
+
+                // 保存图片
+                byte[] imgData = api.downloadFile(imageUrl);
+                String imgFile = "drama_" + System.currentTimeMillis() + ".png";
+                File imgDir = getExternalFilesDir(Environment.DIRECTORY_PICTURES);
+                File imgPath = new File(imgDir, imgFile);
+                FileOutputStream fos = new FileOutputStream(imgPath);
+                fos.write(imgData);
+                fos.close();
+
+                final String finalVideoPath = videoPath;
+                final String finalImgPath = imgPath.getAbsolutePath();
+                lastScript = script;
+                lastShots = shots;
+
+                runOnUiThread(() -> {
+                    pd.dismiss();
+                    btnGenerate.setEnabled(true);
+
+                    tvOutput.setText("");
+                    appendOutput("=== 剧本 ===\n\n" + script);
+                    appendOutput("\n=== 分镜 ===\n\n" + shots);
+                    appendOutput("\n=== 完成 ===");
+
+                    showImagePreview(imgData);
+                    if (finalVideoPath != null) {
+                        showVideoPreview(finalVideoPath);
                     }
                 });
+
+            } catch (IOException | InterruptedException e) {
+                runOnUiThread(() -> {
+                    pd.dismiss();
+                    btnGenerate.setEnabled(true);
+                    Toast.makeText(this, "失败: " + e.getMessage(), Toast.LENGTH_LONG).show();
+                });
+            }
+        }).start();
     }
 }
